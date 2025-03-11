@@ -11,45 +11,47 @@ export default async function handler(req, res) {
   
   await dbConnect();
   
-  const { method } = req;
-  const userId = session.user.id;
-  
-  switch (method) {
-    // Obtener todas las asignaturas del usuario
-    case 'GET':
-      try {
-        const subjects = await Subject.find({ userId });
-        res.status(200).json(subjects);
-      } catch (error) {
-        res.status(500).json({ error: error.message });
-      }
-      break;
-      
-    // Crear una nueva asignatura
-    case 'POST':
-      try {
-        // Si no se especifica un color, generar uno aleatorio
-        if (!req.body.color) {
-          const colors = [
-            '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', '#009688', 
-            '#4caf50', '#8bc34a', '#cddc39', '#ffc107', '#ff9800',
-            '#ff5722', '#795548', '#607d8b', '#e91e63', '#9c27b0'
-          ];
-          req.body.color = colors[Math.floor(Math.random() * colors.length)];
-        }
-        
-        const subject = await Subject.create({
-          ...req.body,
-          userId
-        });
-        res.status(201).json(subject);
-      } catch (error) {
-        res.status(400).json({ error: error.message });
-      }
-      break;
-      
-    default:
-      res.setHeader('Allow', ['GET', 'POST']);
-      res.status(405).end(`Method ${method} Not Allowed`);
+  // GET - Obtener todas las asignaturas del usuario
+  if (req.method === 'GET') {
+    try {
+      const subjects = await Subject.find({ userId: session.user.id })
+                                  .sort({ name: 1 });
+      return res.status(200).json(subjects);
+    } catch (error) {
+      console.error('Error fetching subjects:', error);
+      return res.status(500).json({ error: 'Error al obtener las asignaturas' });
+    }
   }
+  
+  // POST - Crear una nueva asignatura
+  if (req.method === 'POST') {
+    try {
+      const { name, code, color, professor, professorContact, credits, schedule, notes } = req.body;
+      
+      // Validación básica
+      if (!name) {
+        return res.status(400).json({ error: 'El nombre de la asignatura es obligatorio' });
+      }
+
+      const newSubject = await Subject.create({
+        name,
+        code: code || '',
+        color: color || '#3182CE',
+        professor: professor || '',
+        professorContact: professorContact || '',
+        credits: credits || 0,
+        schedule: schedule || [],
+        notes: notes || '',
+        userId: session.user.id
+      });
+
+      return res.status(201).json(newSubject);
+    } catch (error) {
+      console.error('Error creating subject:', error);
+      return res.status(500).json({ error: 'Error al crear la asignatura' });
+    }
+  }
+  
+  // Si el método no está permitido
+  return res.status(405).json({ error: 'Método no permitido' });
 }

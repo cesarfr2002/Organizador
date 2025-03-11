@@ -7,14 +7,35 @@ const HOURS = Array.from({ length: 14 }, (_, i) => i + 7); // 7 AM a 8 PM
 
 export default function ScheduleManager({ subjects }) {
   const [schedule, setSchedule] = useState([]);
+  const [selectedClass, setSelectedClass] = useState(null);
+  const [viewMode, setViewMode] = useState('week'); // 'week', 'list'
+  const [campusFilter, setCampusFilter] = useState('all');
+  const [availableCampuses, setAvailableCampuses] = useState([]);
   
   useEffect(() => {
     if (subjects && subjects.length > 0) {
+      // Extraer todos los campus disponibles para el filtro
+      const campuses = new Set();
+      subjects.forEach(subject => {
+        subject.schedule.forEach(slot => {
+          if (slot.location && slot.location.campus) {
+            campuses.add(slot.location.campus);
+          }
+        });
+      });
+      setAvailableCampuses(Array.from(campuses));
+      
       // Organizar las materias por día y hora para mostrarlas en el horario
       const scheduleMap = {};
       
       subjects.forEach(subject => {
         subject.schedule.forEach(slot => {
+          // Si hay un filtro de campus activo, aplicarlo
+          if (campusFilter !== 'all' && 
+              (!slot.location || !slot.location.campus || slot.location.campus !== campusFilter)) {
+            return;
+          }
+          
           const day = slot.day;
           const key = `${day}-${slot.startTime}`;
           
@@ -25,6 +46,7 @@ export default function ScheduleManager({ subjects }) {
           scheduleMap[key].push({
             subjectId: subject._id,
             name: subject.name,
+            professor: subject.professor,
             location: slot.location,
             startTime: slot.startTime,
             endTime: slot.endTime,
@@ -35,54 +57,267 @@ export default function ScheduleManager({ subjects }) {
       
       setSchedule(scheduleMap);
     }
-  }, [subjects]);
+  }, [subjects, campusFilter]);
+
+  const formatLocation = (location) => {
+    if (!location) return "Sin ubicación";
+    
+    if (typeof location === 'string') return location;
+    
+    const parts = [];
+    if (location.campus) parts.push(location.campus);
+    if (location.building) parts.push(`Edificio ${location.building}`);
+    if (location.floor) parts.push(`Piso ${location.floor}`);
+    if (location.room) parts.push(`Sala ${location.room}`);
+    
+    return parts.join(', ');
+  };
+
+  const handleClassClick = (classInfo) => {
+    setSelectedClass(classInfo === selectedClass ? null : classInfo);
+  };
+
+  const renderWeekView = () => (
+    <div className="border rounded-lg shadow overflow-x-auto">
+      <table className="w-full min-w-max">
+        <thead>
+          <tr>
+            <th className="border p-2">Hora</th>
+            {DAYS.map(day => (
+              <th key={day} className="border p-2">{day}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {HOURS.map(hour => (
+            <tr key={hour}>
+              <td className="border p-2 text-center">
+                {`${hour}:00 - ${hour + 1}:00`}
+              </td>
+              {DAYS.map((_, dayIndex) => {
+                const dayKey = `${dayIndex + 1}-${hour}:00`;
+                const classes = schedule[dayKey] || [];
+                
+                return (
+                  <td key={dayIndex} className="border p-0 h-16 relative">
+                    {classes.map((cls, idx) => (
+                      <div 
+                        key={idx}
+                        onClick={() => handleClassClick(cls)}
+                        className="absolute inset-0 m-1 p-2 rounded overflow-hidden text-xs cursor-pointer hover:shadow-md transition-shadow"
+                        style={{ 
+                          backgroundColor: cls.color + '40', 
+                          borderLeft: `4px solid ${cls.color}` 
+                        }}
+                      >
+                        <div className="font-bold">{cls.name}</div>
+                        {cls.location && (
+                          <div className="text-xs truncate flex items-center">
+                            <svg className="w-3 h-3 mr-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                            </svg>
+                            {formatLocation(cls.location).split(',')[0]}
+                          </div>
+                        )}
+                        <div>
+                          {cls.startTime} - {cls.endTime}
+                        </div>
+                      </div>
+                    ))}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+
+  const renderListView = () => {
+    const classesByDay = {};
+    
+    // Agrupar clases por día
+    DAYS.forEach((day, index) => {
+      const dayNumber = index + 1;
+      classesByDay[dayNumber] = [];
+      
+      for (const key in schedule) {
+        if (key.startsWith(`${dayNumber}-`)) {
+          schedule[key].forEach(cls => {
+            classesByDay[dayNumber].push(cls);
+          });
+        }
+      }
+      
+      // Ordenar por hora
+      classesByDay[dayNumber].sort((a, b) => {
+        return a.startTime.localeCompare(b.startTime);
+      });
+    });
+    
+    return (
+      <div className="space-y-6">
+        {DAYS.map((day, index) => {
+          const dayNumber = index + 1;
+          const classes = classesByDay[dayNumber];
+          
+          return (
+            <div key={day} className="bg-white rounded-lg shadow">
+              <h3 className="font-medium text-lg p-3 bg-gray-50 border-b">{day}</h3>
+              {classes.length > 0 ? (
+                <div className="divide-y">
+                  {classes.map((cls, idx) => (
+                    <div 
+                      key={idx} 
+                      className="p-3 hover:bg-gray-50 cursor-pointer"
+                      onClick={() => handleClassClick(cls)}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="font-medium flex items-center">
+                            <span
+                              className="w-3 h-3 rounded-full mr-2"
+                              style={{ backgroundColor: cls.color }}
+                            ></span>
+                            {cls.name}
+                          </div>
+                          {cls.professor && (
+                            <div className="text-xs text-gray-600 mt-1">Prof. {cls.professor}</div>
+                          )}
+                        </div>
+                        <div className="text-sm">{cls.startTime} - {cls.endTime}</div>
+                      </div>
+                      {cls.location && (
+                        <div className="mt-1 text-sm text-gray-600 flex items-center">
+                          <svg className="w-4 h-4 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                          </svg>
+                          {formatLocation(cls.location)}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-4 text-center text-gray-500">
+                  No hay clases programadas para este día
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
 
   return (
-    <div className="overflow-x-auto">
-      <h2 className="text-2xl font-bold mb-4">Mi Horario</h2>
-      <div className="border rounded-lg shadow">
-        <table className="w-full min-w-max">
-          <thead>
-            <tr>
-              <th className="border p-2">Hora</th>
-              {DAYS.map(day => (
-                <th key={day} className="border p-2">{day}</th>
+    <div>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-2xl font-bold">Mi Horario</h2>
+        
+        <div className="flex space-x-3">
+          {/* Filtro de campus */}
+          {availableCampuses.length > 1 && (
+            <select 
+              value={campusFilter}
+              onChange={(e) => setCampusFilter(e.target.value)}
+              className="border border-gray-300 rounded px-3 py-1 text-sm bg-white"
+            >
+              <option value="all">Todos los campus</option>
+              {availableCampuses.map(campus => (
+                <option key={campus} value={campus}>{campus}</option>
               ))}
-            </tr>
-          </thead>
-          <tbody>
-            {HOURS.map(hour => (
-              <tr key={hour}>
-                <td className="border p-2 text-center">
-                  {`${hour}:00 - ${hour + 1}:00`}
-                </td>
-                {DAYS.map((_, dayIndex) => {
-                  const dayKey = `${dayIndex + 1}-${hour}:00`;
-                  const classes = schedule[dayKey] || [];
-                  
-                  return (
-                    <td key={dayIndex} className="border p-0 h-16 relative">
-                      {classes.map((cls, idx) => (
-                        <div 
-                          key={idx}
-                          className="absolute inset-0 m-1 p-2 rounded overflow-hidden text-xs"
-                          style={{ backgroundColor: cls.color + '40', borderLeft: `4px solid ${cls.color}` }}
-                        >
-                          <div className="font-bold">{cls.name}</div>
-                          <div>{cls.location}</div>
-                          <div>
-                            {cls.startTime} - {cls.endTime}
-                          </div>
-                        </div>
-                      ))}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+            </select>
+          )}
+          
+          {/* Selector de vista */}
+          <div className="flex border rounded overflow-hidden">
+            <button 
+              onClick={() => setViewMode('week')}
+              className={`px-3 py-1 text-sm ${viewMode === 'week' ? 'bg-blue-500 text-white' : 'bg-white'}`}
+            >
+              Semana
+            </button>
+            <button 
+              onClick={() => setViewMode('list')}
+              className={`px-3 py-1 text-sm ${viewMode === 'list' ? 'bg-blue-500 text-white' : 'bg-white'}`}
+            >
+              Lista
+            </button>
+          </div>
+        </div>
       </div>
+      
+      {/* Detalles de clase seleccionada */}
+      {selectedClass && (
+        <div className="mb-4 bg-white p-4 rounded-lg shadow border-l-4" style={{ borderLeftColor: selectedClass.color }}>
+          <div className="flex justify-between">
+            <h3 className="text-xl font-medium">{selectedClass.name}</h3>
+            <button 
+              onClick={() => setSelectedClass(null)} 
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          
+          <div className="mt-2 space-y-2">
+            {selectedClass.professor && (
+              <div className="flex">
+                <span className="font-medium w-24">Profesor:</span>
+                <span>{selectedClass.professor}</span>
+              </div>
+            )}
+            
+            <div className="flex">
+              <span className="font-medium w-24">Horario:</span>
+              <span>{DAYS[parseInt(selectedClass.startTime.split('-')[0]) - 1]}, {selectedClass.startTime} - {selectedClass.endTime}</span>
+            </div>
+            
+            {selectedClass.location && (
+              <div className="flex items-start">
+                <span className="font-medium w-24">Ubicación:</span>
+                <div>
+                  {typeof selectedClass.location === 'string' ? (
+                    <span>{selectedClass.location}</span>
+                  ) : (
+                    <div>
+                      {selectedClass.location.campus && <div>Campus: {selectedClass.location.campus}</div>}
+                      {selectedClass.location.building && <div>Edificio: {selectedClass.location.building}</div>}
+                      {selectedClass.location.floor && <div>Piso: {selectedClass.location.floor}</div>}
+                      {selectedClass.location.room && <div>Sala: {selectedClass.location.room}</div>}
+                      {selectedClass.location.additionalInfo && (
+                        <div className="mt-1 text-sm italic">{selectedClass.location.additionalInfo}</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <div className="mt-4 flex justify-end">
+            <a 
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(formatLocation(selectedClass.location))}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center text-sm text-blue-600 hover:text-blue-800"
+            >
+              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+              </svg>
+              Ver en mapa
+            </a>
+          </div>
+        </div>
+      )}
+
+      {/* Visualización del horario */}
+      {viewMode === 'week' ? renderWeekView() : renderListView()}
     </div>
   );
 }
