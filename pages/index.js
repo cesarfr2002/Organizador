@@ -10,8 +10,10 @@ import DashboardStats from '../components/DashboardStats';
 import StudyTimer from '../components/StudyTimer';
 import { toast } from 'react-toastify';
 import RecentResources from '../components/RecentResources';
-import QuickResourceForm from '../components/QuickResourceForm'; // Importar el nuevo componente
+import QuickResourceForm from '../components/QuickResourceForm';
 import SearchResources from '../components/SearchResources';
+import { format, addDays, subDays, isSameDay } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 export default function Home() {
   const { data: session, status } = useSession();
@@ -19,8 +21,9 @@ export default function Home() {
   const [subjects, setSubjects] = useState([]);
   const [todaySchedule, setTodaySchedule] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showResourceForm, setShowResourceForm] = useState(false); // Estado para controlar la visibilidad del formulario
-  
+  const [showResourceForm, setShowResourceForm] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login');
@@ -30,41 +33,53 @@ export default function Home() {
     if (status === 'authenticated') {
       fetchDashboardData();
     }
-  }, [status, router]);
+  }, [status, router, selectedDate]); // Re-fetch when selectedDate changes
   
+  // Generate schedule for a specific date based on day of week
+  const generateScheduleForDate = (subjects, targetDate) => {
+    // Get day of week for target date (1-7, where 1 is Monday)
+    const targetDay = targetDate.getDay() || 7;
+    const scheduleForDate = [];
+    
+    subjects.forEach(subject => {
+      const daySlots = (subject.schedule || []).filter(slot => slot.day === targetDay);
+      
+      daySlots.forEach(slot => {
+        // Create a date object for this event on the target date
+        const eventDate = new Date(targetDate);
+        eventDate.setHours(0, 0, 0, 0); // Reset time
+        
+        scheduleForDate.push({
+          ...slot,
+          subjectId: subject._id,
+          name: subject.name,
+          professor: subject.professor,
+          color: subject.color,
+          date: eventDate // Add specific date
+        });
+      });
+    });
+    
+    // Sort by start time
+    scheduleForDate.sort((a, b) => {
+      return a.startTime.localeCompare(b.startTime);
+    });
+    
+    return scheduleForDate;
+  };
+
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      // Fetch subjects for today's schedule
+      // Fetch subjects for schedule
       const subjectsRes = await fetch('/api/subjects');
       if (subjectsRes.ok) {
         const subjectsData = await subjectsRes.json();
         setSubjects(subjectsData);
         
-        // Process schedule for today
-        const today = new Date().getDay() || 7; // 1-7, where 1 is Monday
-        const todayClasses = [];
-        
-        subjectsData.forEach(subject => {
-          const todaySlots = (subject.schedule || []).filter(slot => slot.day === today);
-          
-          todaySlots.forEach(slot => {
-            todayClasses.push({
-              ...slot,
-              subjectId: subject._id,
-              name: subject.name,
-              professor: subject.professor,
-              color: subject.color
-            });
-          });
-        });
-        
-        // Sort by start time
-        todayClasses.sort((a, b) => {
-          return a.startTime.localeCompare(b.startTime);
-        });
-        
-        setTodaySchedule(todayClasses);
+        // Generate schedule for selected date
+        const classesForSelectedDate = generateScheduleForDate(subjectsData, selectedDate);
+        setTodaySchedule(classesForSelectedDate);
       }
     } catch (error) {
       console.error('Error fetching dashboard data', error);
@@ -72,6 +87,19 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Navigation functions for date selection
+  const goToPreviousDay = () => {
+    setSelectedDate(prevDate => subDays(prevDate, 1));
+  };
+
+  const goToNextDay = () => {
+    setSelectedDate(prevDate => addDays(prevDate, 1));
+  };
+
+  const goToToday = () => {
+    setSelectedDate(new Date());
   };
 
   if (status === 'loading' || loading) {
@@ -109,7 +137,7 @@ export default function Home() {
               <DashboardStats />
             </div>
           </section>
-          
+
           {/* Temporizador de estudio */}
           <section id="study-timer" className="bg-white rounded-lg shadow">
             <h2 className="text-lg font-semibold p-4 border-b">Temporizador de estudio</h2>
@@ -141,20 +169,62 @@ export default function Home() {
                   <QuickResourceForm />
                 </div>
               )}
+              
               {/* Agregar búsqueda de recursos */}
               <SearchResources />
             </div>
           </div>
           
-          {/* Horario del día */}
+          {/* Horario del día con navegación */}
           <section className="bg-white rounded-lg shadow">
-            <h2 className="text-lg font-semibold p-4 border-b">Horario de hoy</h2>
+            <div className="flex justify-between items-center p-4 border-b">
+              <div className="flex items-center space-x-2">
+                <button 
+                  onClick={goToPreviousDay}
+                  className="p-1 rounded-full hover:bg-gray-100"
+                  title="Día anterior"
+                >
+                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                
+                <h2 className="text-lg font-semibold">
+                  {isSameDay(selectedDate, new Date())
+                    ? 'Horario de hoy'
+                    : isSameDay(selectedDate, addDays(new Date(), 1))
+                      ? 'Horario de mañana'
+                      : `Horario del ${format(selectedDate, "EEEE d 'de' MMMM", { locale: es })}`}
+                </h2>
+                
+                <button 
+                  onClick={goToNextDay}
+                  className="p-1 rounded-full hover:bg-gray-100"
+                  title="Día siguiente"
+                >
+                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+              
+              {!isSameDay(selectedDate, new Date()) && (
+                <button 
+                  onClick={goToToday}
+                  className="text-sm text-blue-600 hover:text-blue-800"
+                  title="Ir a hoy"
+                >
+                  Volver a hoy
+                </button>
+              )}
+            </div>
+            
             <div className="p-4">
-              <DailySchedule schedule={todaySchedule} />
+              <DailySchedule schedule={todaySchedule} selectedDate={selectedDate} />
             </div>
           </section>
           
-          {/* Tareas pendientes (antes "Próximos eventos") */}
+          {/* Tareas pendientes */}
           <section className="bg-white rounded-lg shadow">
             <h2 className="text-lg font-semibold p-4 border-b">Tareas pendientes</h2>
             <div className="p-4">

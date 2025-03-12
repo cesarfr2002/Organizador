@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { format, parseISO, isWithinInterval, addMinutes } from 'date-fns';
+import { format, parseISO, isWithinInterval, addMinutes, isEqual, isSameDay } from 'date-fns';
+import { es } from 'date-fns/locale';
 
-export default function DailySchedule({ schedule = [] }) {
+export default function DailySchedule({ schedule = [], selectedDate = new Date() }) {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [nextClass, setNextClass] = useState(null);
   const [processedSchedule, setProcessedSchedule] = useState([]);
@@ -20,8 +21,13 @@ export default function DailySchedule({ schedule = [] }) {
     if (schedule.length > 0) {
       const now = new Date();
       
+      // Filtrar eventos que correspondan a la fecha seleccionada
+      const filteredSchedule = schedule.filter(item => {
+        return item.date && isSameDay(new Date(item.date), selectedDate);
+      });
+      
       // Eliminar duplicados primero (basado en nombre y hora de inicio)
-      const uniqueClasses = schedule.filter((item, index, self) => 
+      const uniqueClasses = filteredSchedule.filter((item, index, self) => 
         index === self.findIndex(
           t => t.name === item.name && t.startTime === item.startTime
         )
@@ -41,10 +47,15 @@ export default function DailySchedule({ schedule = [] }) {
         
         let status = 'upcoming'; // Por defecto es futura
         
-        if (now > endTime) {
-          status = 'past'; // Ya pasó
-        } else if (isWithinInterval(now, { start: startTime, end: endTime })) {
-          status = 'current'; // Está ocurriendo ahora
+        // Solo marcar como 'current' o 'past' si estamos viendo el día de hoy
+        if (isSameDay(selectedDate, now)) {
+          if (now > endTime) {
+            status = 'past'; // Ya pasó
+          } else if (isWithinInterval(now, { start: startTime, end: endTime })) {
+            status = 'current'; // Está ocurriendo ahora
+          }
+        } else if (selectedDate < now) {
+          status = 'past'; // Días anteriores al actual
         }
         
         return {
@@ -66,7 +77,7 @@ export default function DailySchedule({ schedule = [] }) {
       setProcessedSchedule([]);
       setNextClass(null);
     }
-  }, [schedule, currentTime]);
+  }, [schedule, currentTime, selectedDate]);
   
   // Convertir una cadena de tiempo (HH:MM) a un objeto Date
   const parseTimeString = (timeString) => {
@@ -142,13 +153,13 @@ export default function DailySchedule({ schedule = [] }) {
   };
   
   // Si no hay horario para mostrar
-  if (schedule.length === 0) {
+  if (processedSchedule.length === 0) {
     return (
       <div className="text-center py-8 text-gray-500">
         <svg className="w-12 h-12 mx-auto mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
         </svg>
-        <p>No hay clases programadas para hoy</p>
+        <p>No hay clases programadas para {isSameDay(selectedDate, new Date()) ? 'hoy' : format(selectedDate, "EEEE d 'de' MMMM", { locale: es })}</p>
       </div>
     );
   }
@@ -283,56 +294,8 @@ export default function DailySchedule({ schedule = [] }) {
         </div>
       )}
 
-      {/* Resto del horario del día */}
-      <div className="space-y-2">
-        {processedSchedule.map((item, index) => {
-          if (item === nextClass) return null; // No repetir la próxima clase
-          
-          const isActive = isWithinInterval(currentTime, { 
-            start: parseTimeString(item.startTime), 
-            end: parseTimeString(item.endTime) 
-          });
-          
-          const isPast = currentTime > parseTimeString(item.endTime);
-          
-          return (
-            <div 
-              key={index}
-              className={`p-2 rounded-md border flex items-start ${
-                isActive ? 'border-blue-500 bg-blue-50' : 
-                isPast ? 'border-gray-200 bg-gray-50 opacity-60' : 
-                'border-gray-200'
-              }`}
-            >
-              <div 
-                className="w-3 h-3 rounded-full mr-2 mt-1"
-                style={{ backgroundColor: item.color || '#CBD5E0' }}
-              ></div>
-              <div className="flex-1">
-                <div className="flex justify-between items-center">
-                  <span className={`text-sm font-medium ${isPast ? 'text-gray-500' : 'text-gray-800'}`}>
-                    {item.name}
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    {item.startTime} - {item.endTime}
-                  </span>
-                </div>
-                {item.location && (
-                  <div className="text-xs text-gray-500 mt-0.5 flex">
-                    <svg className="w-3 h-3 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                    </svg>
-                    <div>{formatLocation(item.location)}</div>
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
       {/* Bloques de horario agrupados con indicación visual de estado */}
-      <div className="space-y-2 mt-4">
+      <div className="space-y-2">
         {groupedSchedule.map((block, blockIndex) => (
           <div 
             key={blockIndex} 
