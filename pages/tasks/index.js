@@ -154,12 +154,26 @@ export default function Tasks() {
 
       <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
         <h1 className="text-2xl font-bold">Mis Tareas</h1>
-        <Link 
-          href="/tasks/new" 
-          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors text-center"
-        >
-          Nueva Tarea
-        </Link>
+        <div className="flex space-x-2">
+          <button 
+            onClick={() => router.push('/tasks/quick')}
+            className="px-4 py-2 bg-amber-500 text-white rounded hover:bg-amber-600 focus:outline-none flex items-center"
+          >
+            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            Tarea Rápida
+          </button>
+          <button 
+            onClick={() => router.push('/tasks/new')}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none flex items-center"
+          >
+            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Nueva Tarea
+          </button>
+        </div>
       </div>
 
       {/* Filtros */}

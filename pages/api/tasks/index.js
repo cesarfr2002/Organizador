@@ -1,47 +1,65 @@
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '../auth/[...nextauth]';
 import dbConnect from '../../../lib/dbConnect';
 import Task from '../../../models/Task';
-import { getSession } from 'next-auth/react';
 
 export default async function handler(req, res) {
-  const session = await getSession({ req });
+  const session = await getServerSession(req, res, authOptions);
   
+  // Verificar autenticación
   if (!session) {
-    return res.status(401).json({ error: 'No autorizado' });
+    return res.status(401).json({ message: 'No autenticado' });
   }
-  
+
   await dbConnect();
-  
-  const { method } = req;
-  const userId = session.user.id;
-  
-  switch (method) {
-    // Obtener todas las tareas del usuario
-    case 'GET':
-      try {
-        const tasks = await Task.find({ userId })
-          .populate('subject', 'name color')
-          .sort({ dueDate: 1 });
-        res.status(200).json(tasks);
-      } catch (error) {
-        res.status(500).json({ error: error.message });
-      }
-      break;
+
+  // GET: Recuperar tareas
+  if (req.method === 'GET') {
+    try {
+      const tasks = await Task.find({ userId: session.user.id })
+        .populate('subject', 'name color')
+        .sort({ dueDate: 1 });
+      res.status(200).json(tasks);
+    } catch (error) {
+      console.error('Error retrieving tasks:', error);
+      res.status(500).json({ message: 'Error al obtener las tareas' });
+    }
+  } 
+  // POST: Crear una nueva tarea
+  else if (req.method === 'POST') {
+    try {
+      // Extraer datos del cuerpo de la solicitud
+      const { title, subject, dueDate, priority, description, type } = req.body;
       
-    // Crear una nueva tarea
-    case 'POST':
-      try {
-        const task = await Task.create({
-          ...req.body,
-          userId
-        });
-        res.status(201).json(task);
-      } catch (error) {
-        res.status(400).json({ error: error.message });
+      // Validar datos requeridos
+      if (!title) {
+        return res.status(400).json({ message: 'El título es obligatorio' });
       }
-      break;
       
-    default:
-      res.setHeader('Allow', ['GET', 'POST']);
-      res.status(405).end(`Method ${method} Not Allowed`);
+      // Crear la tarea con el ID de usuario de la sesión
+      const task = new Task({
+        title,
+        subject: subject || null,
+        dueDate: dueDate || null,
+        priority: priority || 2,
+        description: description || '',
+        type: type || 'tarea',
+        completed: false,
+        userId: session.user.id // Asegurar que se use el ID de usuario de la sesión
+      });
+      
+      // Guardar en la base de datos
+      await task.save();
+      
+      // Responder con la tarea creada
+      res.status(201).json(task);
+    } catch (error) {
+      console.error('Error creating task:', error);
+      res.status(500).json({ message: 'Error al crear la tarea' });
+    }
+  } else {
+    // Método no permitido
+    res.setHeader('Allow', ['GET', 'POST']);
+    res.status(405).json({ message: `Method ${req.method} not allowed` });
   }
 }

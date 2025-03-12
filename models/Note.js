@@ -10,6 +10,8 @@ const NoteSchema = new mongoose.Schema({
     path: String,
     type: String
   }],
+  // Añadimos campo para almacenar las URLs de imágenes
+  images: [{ type: String }],
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
 }, {
   timestamps: true

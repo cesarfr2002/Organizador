@@ -1,40 +1,53 @@
 import NextAuth from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
+import { MongoDBAdapter } from '@auth/mongodb-adapter'; // Cambiado a la nueva ubicación
+import clientPromise from '../../../lib/mongodb';
 import dbConnect from '../../../lib/dbConnect';
 import User from '../../../models/User';
-import { compare } from 'bcryptjs';
+import bcrypt from 'bcryptjs';
 
-export default NextAuth({
+export const authOptions = {
+  adapter: MongoDBAdapter(clientPromise), // El adaptador sigue igual
   providers: [
     CredentialsProvider({
-      name: 'Credenciales',
+      name: 'credentials',
       credentials: {
-        email: { label: 'Email', type: 'email' },
-        password: { label: 'Contraseña', type: 'password' }
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
         await dbConnect();
-
+        
+        // Buscar usuario por email
         const user = await User.findOne({ email: credentials.email });
-
+        
         if (!user) {
-          throw new Error('No existe cuenta con este correo electrónico');
+          return null;
         }
-
-        const isValid = await compare(credentials.password, user.password);
-
-        if (!isValid) {
-          throw new Error('Contraseña incorrecta');
+        
+        // Verificar contraseña
+        const isPasswordMatch = await bcrypt.compare(
+          credentials.password,
+          user.password
+        );
+        
+        if (!isPasswordMatch) {
+          return null;
         }
-
+        
+        // Devolver objeto de usuario sin la contraseña
         return {
           id: user._id.toString(),
           name: user.name,
-          email: user.email,
+          email: user.email
         };
-      },
-    }),
+      }
+    })
   ],
+  session: {
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 días
+  },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
@@ -43,18 +56,18 @@ export default NextAuth({
       return token;
     },
     async session({ session, token }) {
-      session.user.id = token.id;
+      if (token) {
+        session.user.id = token.id;
+      }
       return session;
-    },
-  },
-  session: {
-    strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60, // 30 días
+    }
   },
   pages: {
     signIn: '/login',
-    signOut: '/login',
     error: '/login',
   },
-  secret: process.env.NEXTAUTH_SECRET || 'uni-organizer-secret-key',
-});
+  secret: process.env.NEXTAUTH_SECRET,
+  debug: process.env.NODE_ENV === 'development',
+};
+
+export default NextAuth(authOptions);

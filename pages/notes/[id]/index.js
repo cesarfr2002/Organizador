@@ -9,6 +9,15 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { marked } from 'marked';
 
+// Configuración para que Marked renderice correctamente las imágenes
+marked.use({
+  renderer: {
+    image(href, title, text) {
+      return `<img src="${href}" alt="${text || ''}" title="${title || ''}" class="max-w-full h-auto" />`;
+    }
+  }
+});
+
 export default function NoteDetail() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -156,7 +165,7 @@ export default function NoteDetail() {
           </div>
 
           {/* Contenido */}
-          <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: marked(note.content || '') }} />
+          <div className="prose max-w-none prose-img:max-w-full" dangerouslySetInnerHTML={{ __html: marked(note.content || '') }} />
         </div>
       </div>
     </Layout>

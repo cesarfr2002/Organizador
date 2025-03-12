@@ -15,8 +15,7 @@ const LocationSchema = new mongoose.Schema({
   },
   room: { 
     type: String,
-    trim: true,
-    required: true
+    trim: true
   },
   additionalInfo: { 
     type: String,

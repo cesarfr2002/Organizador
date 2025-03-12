@@ -23,6 +23,19 @@ const COLORS = [
   { value: '#702459', label: 'Rosa' },
 ];
 
+const initialScheduleItem = {
+  day: 1,
+  startTime: '08:00',
+  endTime: '10:00',
+  location: {
+    campus: '',
+    building: '',
+    floor: '',
+    room: '',
+    additionalInfo: ''
+  }
+};
+
 export default function SubjectForm({ subject, isEditing = false }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -36,18 +49,8 @@ export default function SubjectForm({ subject, isEditing = false }) {
     notes: '',
     schedule: []
   });
-  const [scheduleItem, setScheduleItem] = useState({
-    day: 1,
-    startTime: '08:00',
-    endTime: '10:00',
-    location: {
-      campus: '',
-      building: '',
-      floor: '',
-      room: '',
-      additionalInfo: ''
-    }
-  });
+  const [scheduleItem, setScheduleItem] = useState({...initialScheduleItem});
+  const [formErrors, setFormErrors] = useState({});
 
   useEffect(() => {
     if (isEditing && subject) {
@@ -83,25 +86,42 @@ export default function SubjectForm({ subject, isEditing = false }) {
     });
   };
   
+  const validateScheduleItem = () => {
+    const errors = {};
+    
+    // Validar que la hora de fin sea posterior a la de inicio
+    if (scheduleItem.startTime && scheduleItem.endTime) {
+      const start = new Date(`2023-01-01T${scheduleItem.startTime}`);
+      const end = new Date(`2023-01-01T${scheduleItem.endTime}`);
+      
+      if (end <= start) {
+        errors.time = "La hora de finalización debe ser posterior a la hora de inicio";
+      }
+    }
+    
+    // La sala no es realmente obligatoria, permitamos que esté vacía
+    return errors;
+  };
+  
   const addScheduleItem = () => {
+    const errors = validateScheduleItem();
+    
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+    
     setFormData(prev => ({
       ...prev,
       schedule: [...prev.schedule, scheduleItem]
     }));
     
-    // Reset form for next item
-    setScheduleItem({
-      day: 1,
-      startTime: '08:00',
-      endTime: '10:00',
-      location: {
-        campus: '',
-        building: '',
-        floor: '',
-        room: '',
-        additionalInfo: ''
-      }
-    });
+    // Resetear el formulario para el siguiente horario
+    setScheduleItem({...initialScheduleItem});
+    setFormErrors({});
+    
+    // Mostrar confirmación
+    toast.success('Horario agregado correctamente');
   };
   
   const removeScheduleItem = (index) => {
@@ -109,6 +129,7 @@ export default function SubjectForm({ subject, isEditing = false }) {
       ...prev,
       schedule: prev.schedule.filter((_, i) => i !== index)
     }));
+    toast.info('Horario eliminado');
   };
   
   const handleSubmit = async (e) => {
@@ -116,9 +137,17 @@ export default function SubjectForm({ subject, isEditing = false }) {
     setLoading(true);
     
     try {
+      // Validar que al menos tenga un nombre
+      if (!formData.name.trim()) {
+        setLoading(false);
+        toast.error('El nombre de la asignatura es obligatorio');
+        return;
+      }
+      
       const url = isEditing ? `/api/subjects/${subject._id}` : '/api/subjects';
       const method = isEditing ? 'PATCH' : 'POST';
       
+      // Enviar formulario
       const res = await fetch(url, {
         method,
         headers: {
@@ -136,7 +165,7 @@ export default function SubjectForm({ subject, isEditing = false }) {
       router.push('/subjects');
     } catch (error) {
       console.error('Error saving subject:', error);
-      toast.error(error.message || 'Error al guardar la asignatura');
+      toast.error(error.message || 'Error al guardar la asignatura. Asegúrate de haber iniciado sesión.');
     } finally {
       setLoading(false);
     }
@@ -265,6 +294,13 @@ export default function SubjectForm({ subject, isEditing = false }) {
         <div className="mb-6">
           <div className="flex justify-between items-center mb-3">
             <h3 className="text-lg font-medium">Horario</h3>
+            <div className="text-sm text-gray-500">
+              {formData.schedule.length === 0 ? (
+                <span>No hay horarios configurados</span>
+              ) : (
+                <span>{formData.schedule.length} horario(s) configurado(s)</span>
+              )}
+            </div>
           </div>
           
           {/* Listado de horarios ya agregados */}
@@ -282,6 +318,8 @@ export default function SubjectForm({ subject, isEditing = false }) {
                         {slot.location.building && `Edificio ${slot.location.building}, `}
                         {slot.location.floor && `Piso ${slot.location.floor}, `}
                         {slot.location.room && `Sala ${slot.location.room}`}
+                        {!slot.location.campus && !slot.location.building && !slot.location.floor && !slot.location.room && 
+                          "Sin ubicación especificada"}
                       </div>
                     </div>
                     <button
@@ -337,6 +375,7 @@ export default function SubjectForm({ subject, isEditing = false }) {
                   onChange={handleScheduleChange}
                   className="w-full border border-gray-300 rounded-md p-1 text-sm"
                 />
+                {formErrors.time && <p className="text-xs text-red-500 mt-1">{formErrors.time}</p>}
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Campus</label>
@@ -369,14 +408,16 @@ export default function SubjectForm({ subject, isEditing = false }) {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Sala *</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Sala
+                  {/* Quitamos el asterisco para hacerlo opcional */}
+                </label>
                 <input
                   type="text"
                   name="location.room"
                   value={scheduleItem.location.room}
                   onChange={handleScheduleChange}
                   className="w-full border border-gray-300 rounded-md p-1 text-sm"
-                  required
                 />
               </div>
               <div>

@@ -32,48 +32,29 @@ export default function DashboardStats() {
   const fetchStats = async () => {
     setLoading(true);
     try {
-      // En un caso real, pasaríamos parámetros según activeTab
-      // const res = await fetch(`/api/dashboard/stats?period=${activeTab}`);
+      // Usar la API real con el período adecuado
+      const res = await fetch(`/api/dashboard/stats?period=${activeTab}`);
       
-      // Simulamos datos diferentes según el periodo seleccionado
-      setTimeout(() => {
-        if (activeTab === 'week') {
-          setStats({
-            tasksCompleted: 12,
-            tasksPending: 5,
-            upcomingExams: 2,
-            totalSubjects: 6,
-            currentStreak: 4,
-            weeklyProgress: 68,
-            studyGoals: { achieved: 3, total: 5 }
-          });
-        } else if (activeTab === 'month') {
-          setStats({
-            tasksCompleted: 45,
-            tasksPending: 8,
-            upcomingExams: 5,
-            totalSubjects: 6,
-            currentStreak: 4,
-            weeklyProgress: 72,
-            studyGoals: { achieved: 12, total: 15 }
-          });
-        } else {
-          setStats({
-            tasksCompleted: 187,
-            tasksPending: 14,
-            upcomingExams: 8,
-            totalSubjects: 6,
-            currentStreak: 4,
-            weeklyProgress: 85,
-            studyGoals: { achieved: 24, total: 30 }
-          });
-        }
-        
+      if (res.ok) {
+        const data = await res.json();
+        setStats(data);
         setLoading(false);
         initCharts();
-      }, 600);
+      } else {
+        throw new Error('Error al obtener estadísticas');
+      }
     } catch (error) {
       console.error('Error fetching stats:', error);
+      // Si falla la API, usar datos de respaldo mínimos
+      setStats({
+        tasksCompleted: 0,
+        tasksPending: 0,
+        upcomingExams: 0,
+        totalSubjects: 0,
+        currentStreak: 0,
+        weeklyProgress: 0,
+        studyGoals: { achieved: 0, total: 0 }
+      });
       setLoading(false);
     }
   };
@@ -83,8 +64,7 @@ export default function DashboardStats() {
     initSubjectProgressChart();
   };
 
-  const initProductivityChart = () => {
-    // Destruir gráfico existente si hay alguno
+  const initProductivityChart = async () => {
     const chartElement = document.getElementById('productivityChart');
     if (!chartElement) return;
     
@@ -93,75 +73,58 @@ export default function DashboardStats() {
       chartInstance.destroy();
     }
     
-    // Datos de ejemplo para el gráfico - ahora con múltiples series
-    const labels = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-    
-    // Generamos datos simulados basados en la pestaña activa
-    let studyData = [3, 2.5, 4, 3.5, 5, 1, 0];
-    let taskCompletionData = [2, 3, 4, 1, 5, 2, 0];
-    
-    if (activeTab === 'month') {
-      // Datos diferentes para vista mensual
-      studyData = [
-        3, 2.5, 4, 3.5, 5, 1, 0,
-        2, 3, 3.5, 4, 4.5, 2, 0,
-        2.5, 3, 4, 3, 4, 1.5, 0,
-        3, 3.5, 4, 3, 4.5, 1, 0
-      ];
-      taskCompletionData = [
-        2, 3, 4, 1, 5, 2, 0,
-        3, 2, 4, 3, 4, 1, 0,
-        2, 4, 3, 2, 3, 1, 0,
-        3, 2, 3, 4, 3, 2, 0
-      ];
-      // Solo mostramos un subconjunto para vista mensual
-      studyData = studyData.slice(0, 7);
-      taskCompletionData = taskCompletionData.slice(0, 7);
-    }
-    
-    new Chart(chartElement, {
-      type: 'bar',
-      data: {
-        labels,
-        datasets: [
-          {
-            label: 'Horas de estudio',
-            data: studyData,
-            backgroundColor: 'rgba(54, 162, 235, 0.7)',
-            borderColor: 'rgba(54, 162, 235, 1)',
-            borderWidth: 1
+    try {
+      // Obtener datos reales para el gráfico de productividad
+      const res = await fetch(`/api/dashboard/productivity?period=${activeTab}`);
+      const data = await res.json();
+      
+      new Chart(chartElement, {
+        type: 'bar',
+        data: {
+          labels: data.labels || ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
+          datasets: [
+            {
+              label: 'Horas de estudio',
+              data: data.studyHours || [],
+              backgroundColor: 'rgba(54, 162, 235, 0.7)',
+              borderColor: 'rgba(54, 162, 235, 1)',
+              borderWidth: 1
+            },
+            {
+              label: 'Tareas completadas',
+              data: data.completedTasks || [],
+              backgroundColor: 'rgba(75, 192, 192, 0.7)',
+              borderColor: 'rgba(75, 192, 192, 1)',
+              borderWidth: 1
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'Cantidad'
+              }
+            }
           },
-          {
-            label: 'Tareas completadas',
-            data: taskCompletionData,
-            backgroundColor: 'rgba(75, 192, 192, 0.7)',
-            borderColor: 'rgba(75, 192, 192, 1)',
-            borderWidth: 1
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          y: {
-            beginAtZero: true,
-            title: {
-              display: true,
-              text: 'Cantidad'
+          plugins: {
+            legend: {
+              position: 'top',
             }
           }
-        },
-        plugins: {
-          legend: {
-            position: 'top',
-          }
         }
-      }
-    });
+      });
+    } catch (error) {
+      console.error('Error loading productivity chart data:', error);
+      // Manejar error de gráfico - podríamos mostrar un mensaje o un gráfico vacío
+    }
   };
   
-  const initSubjectProgressChart = () => {
+  const initSubjectProgressChart = async () => {
     const chartElement = document.getElementById('subjectProgressChart');
     if (!chartElement) return;
     
@@ -170,52 +133,46 @@ export default function DashboardStats() {
       chartInstance.destroy();
     }
     
-    // Datos simulados de progreso por asignatura
-    const subjectData = {
-      labels: ['Programación', 'Matemáticas', 'Base de Datos', 'Redes', 'Inglés'],
-      datasets: [{
-        label: 'Progreso (%)',
-        data: [85, 70, 60, 90, 75],
-        backgroundColor: [
-          'rgba(255, 99, 132, 0.7)',
-          'rgba(54, 162, 235, 0.7)',
-          'rgba(255, 206, 86, 0.7)',
-          'rgba(75, 192, 192, 0.7)',
-          'rgba(153, 102, 255, 0.7)'
-        ],
-        borderColor: [
-          'rgba(255, 99, 132, 1)',
-          'rgba(54, 162, 235, 1)',
-          'rgba(255, 206, 86, 1)',
-          'rgba(75, 192, 192, 1)',
-          'rgba(153, 102, 255, 1)'
-        ],
-        borderWidth: 1
-      }]
-    };
-    
-    new Chart(chartElement, {
-      type: 'radar',
-      data: subjectData,
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          r: {
-            beginAtZero: true,
-            max: 100,
-            ticks: {
-              stepSize: 20
+    try {
+      // Obtener datos reales para el progreso por asignatura
+      const res = await fetch('/api/dashboard/subject-progress');
+      const data = await res.json();
+      
+      new Chart(chartElement, {
+        type: 'radar',
+        data: {
+          labels: data.labels || [],
+          datasets: [{
+            label: 'Progreso (%)',
+            data: data.progress || [],
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            pointBackgroundColor: data.colors || [],
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            r: {
+              beginAtZero: true,
+              max: 100,
+              ticks: {
+                stepSize: 20
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              display: false
             }
           }
-        },
-        plugins: {
-          legend: {
-            display: false
-          }
         }
-      }
-    });
+      });
+    } catch (error) {
+      console.error('Error loading subject progress data:', error);
+    }
   };
 
   if (loading) {
@@ -232,9 +189,9 @@ export default function DashboardStats() {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md">
+    <div>
       {/* Selector de periodo */}
-      <div className="flex border-b">
+      <div className="flex border-b mb-4">
         <button 
           onClick={() => setActiveTab('week')}
           className={`px-4 py-3 text-sm font-medium ${
@@ -268,7 +225,7 @@ export default function DashboardStats() {
       </div>
       
       {/* Stats Cards */}
-      <div className="p-4">
+      <div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg">
             <div className="flex items-center justify-between">
@@ -328,9 +285,9 @@ export default function DashboardStats() {
         </div>
         
         {/* Gráficos */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
           {/* Gráfico de productividad */}
-          <div>
+          <div className="bg-white p-4 rounded-lg border">
             <h3 className="text-lg font-semibold mb-2">Productividad {activeTab === 'week' ? 'semanal' : activeTab === 'month' ? 'mensual' : 'del semestre'}</h3>
             <div className="h-64">
               <canvas id="productivityChart"></canvas>
@@ -338,7 +295,7 @@ export default function DashboardStats() {
           </div>
           
           {/* Gráfico de progreso por asignatura */}
-          <div>
+          <div className="bg-white p-4 rounded-lg border">
             <h3 className="text-lg font-semibold mb-2">Progreso por Asignatura</h3>
             <div className="h-64">
               <canvas id="subjectProgressChart"></canvas>
@@ -347,9 +304,9 @@ export default function DashboardStats() {
         </div>
         
         {/* Barra de progreso semanal */}
-        <div className="mt-6">
+        <div className="mt-6 bg-white p-4 rounded-lg border">
           <div className="flex justify-between items-center mb-2">
-            <h3 className="text-lg font-semibold">Progreso semanal</h3>
+            <h3 className="text-lg font-semibold">Progreso {activeTab === 'week' ? 'semanal' : activeTab === 'month' ? 'mensual' : 'semestral'}</h3>
             <span className="text-sm font-medium text-gray-700">{stats.weeklyProgress}%</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2.5">

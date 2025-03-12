@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { format, isToday, isTomorrow, isPast } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'react-toastify';
+import { useRouter } from 'next/router';
 
 export default function TaskList({ tasks = [], onTaskUpdate, showPriority = false, showCategory = false }) {
   const [expandedTask, setExpandedTask] = useState(null);
+  const router = useRouter();
 
   const handleToggleComplete = async (taskId, isCompleted) => {
     try {
@@ -42,6 +44,32 @@ export default function TaskList({ tasks = [], onTaskUpdate, showPriority = fals
     } else {
       return format(date, 'd MMM', { locale: es });
     }
+  };
+
+  // Helper function to format location object to string
+  const formatLocation = (location) => {
+    if (!location) return "";
+    
+    // If location is already a string, return it
+    if (typeof location === 'string') return location;
+    
+    // If location is an object, format its properties
+    let formattedLocation = "";
+    if (location.campus) formattedLocation += location.campus;
+    if (location.building) {
+      if (formattedLocation) formattedLocation += ", ";
+      formattedLocation += `Edificio ${location.building}`;
+    }
+    if (location.floor) {
+      if (formattedLocation) formattedLocation += ", ";
+      formattedLocation += `Piso ${location.floor}`;
+    }
+    if (location.room) {
+      if (formattedLocation) formattedLocation += ", ";
+      formattedLocation += `Sala ${location.room}`;
+    }
+    
+    return formattedLocation || "Sin ubicación especificada";
   };
 
   const getPriorityClass = (priority) => {
@@ -157,7 +185,7 @@ export default function TaskList({ tasks = [], onTaskUpdate, showPriority = fals
             )}
             {task.examDetails.location && (
               <div>
-                <span className="font-medium">Ubicación:</span> {task.examDetails.location}
+                <span className="font-medium">Ubicación:</span> {formatLocation(task.examDetails.location)}
               </div>
             )}
           </div>
@@ -342,6 +370,7 @@ export default function TaskList({ tasks = [], onTaskUpdate, showPriority = fals
                     {/* Botones de acción para tareas expandidas */}
                     <div className="mt-3 flex space-x-2">
                       <button 
+                        type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           router.push(`/tasks/edit/${task._id}`);

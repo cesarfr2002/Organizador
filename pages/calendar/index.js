@@ -6,8 +6,31 @@ import Layout from '../../components/Layout';
 import { toast } from 'react-toastify';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
-import { format, addDays, subDays, parseISO, isValid, isSameDay } from 'date-fns';
+import { format, addDays, subDays, parseISO, isValid, isSameDay, startOfWeek, endOfWeek } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { Calendar as BigCalendar, momentLocalizer } from 'react-big-calendar';
+import moment from 'moment';
+import 'moment/locale/es';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
+
+// Configuración del localizador de momentjs para el calendario
+moment.locale('es');
+const localizer = momentLocalizer(moment);
+
+// Función para formatear objetos de ubicación antes de renderizarlos
+const formatLocation = (location) => {
+  if (!location) return "";
+  
+  if (typeof location === 'string') return location;
+  
+  const parts = [];
+  if (location.campus) parts.push(location.campus);
+  if (location.building) parts.push(`Edificio ${location.building}`);
+  if (location.floor) parts.push(`Piso ${location.floor}`);
+  if (location.room) parts.push(`Sala ${location.room}`);
+  
+  return parts.join(', ');
+};
 
 export default function CalendarView() {
   const { data: session, status } = useSession();
@@ -195,6 +218,50 @@ export default function CalendarView() {
     setDate(newDate);
   };
 
+  // Componente para renderizar evento en el calendario (donde posiblemente esté el error)
+  const EventComponent = ({ event }) => (
+    <div title={`${event.title} - ${formatLocation(event.location)}`} className="overflow-hidden">
+      <p className="text-sm font-medium truncate">{event.title}</p>
+      {event.location && (
+        <p className="text-xs truncate">
+          {/* Usar formatLocation en lugar del objeto directo */}
+          {formatLocation(event.location)}
+        </p>
+      )}
+    </div>
+  );
+
+  // Componente para la información detallada al hacer clic en un evento
+  const EventDetails = ({ event }) => (
+    <div className="bg-white rounded-lg shadow-lg p-4">
+      <h3 className="text-lg font-medium">{event.title}</h3>
+      {event.description && <p className="mt-1 text-gray-600">{event.description}</p>}
+      {event.subject && <p className="text-sm text-gray-600">Asignatura: {event.subject}</p>}
+      {event.type && <p className="text-sm text-gray-600">Tipo: {event.type}</p>}
+      {event.location && (
+        <p className="text-sm text-gray-600">
+          Ubicación: {formatLocation(event.location)}
+        </p>
+      )}
+      <p className="text-sm text-gray-600">
+        Fecha: {moment(event.start).format('DD/MM/YYYY')}
+      </p>
+      <p className="text-sm text-gray-600">
+        Hora: {moment(event.start).format('HH:mm')} - {moment(event.end).format('HH:mm')}
+      </p>
+    </div>
+  );
+
+  // Asegurarse de que en todas las partes donde pueda haber un objeto location, se use formatLocation
+  const processEvents = (events) => {
+    return events.map(event => ({
+      ...event,
+      // Si se necesita pasar la ubicación como texto para algún componente, 
+      // se puede agregar una propiedad locationText
+      locationText: formatLocation(event.location)
+    }));
+  };
+
   if (status === 'loading' || loading) {
     return (
       <Layout>
@@ -300,16 +367,20 @@ export default function CalendarView() {
         {/* Calendario */}
         <div className="lg:col-span-2">
           <div className="bg-white rounded-lg shadow p-4">
-            <Calendar
-              onChange={setDate}
-              value={date}
-              onClickDay={handleDayClick}
-              tileContent={tileContent}
-              locale="es-ES"
-              className="w-full border-0 custom-calendar"
-              next2Label={null}
-              prev2Label={null}
-              showNeighboringMonth={false}
+            <BigCalendar
+              localizer={localizer}
+              events={processEvents(events)}
+              startAccessor="start"
+              endAccessor="end"
+              style={{ height: 500 }}
+              messages={{
+                // ...existing code...
+              }}
+              components={{
+                event: EventComponent, // Usar el componente personalizado para evitar renderizado directo
+                // ...existing code...
+              }}
+              // ...existing code...
             />
             {/* Leyenda */}
             <div className="mt-4 flex items-center justify-center space-x-6 text-sm text-gray-500">
@@ -392,7 +463,7 @@ export default function CalendarView() {
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
                                     </svg>
-                                    {event.location}
+                                    {formatLocation(event.location)}
                                   </p>
                                 )}
                               </div>
