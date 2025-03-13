@@ -32,9 +32,18 @@ export default async function handler(req, res) {
         // Extraer datos del cuerpo de la solicitud
         const { title, subject, dueDate, priority, description, type } = req.body;
         
+        // Log for debugging
+        console.log('Received task data:', req.body);
+        
         // Validar datos requeridos
         if (!title) {
           return res.status(400).json({ message: 'El título es obligatorio' });
+        }
+        
+        // No need to convert priority - accept string values directly
+        // Validate the priority value is one of the acceptable enum values
+        if (!['Alta', 'Media', 'Baja'].includes(priority)) {
+          console.warn('Invalid priority value, defaulting to Media:', priority);
         }
         
         // Crear la tarea con el ID de usuario de la sesión
@@ -42,7 +51,7 @@ export default async function handler(req, res) {
           title,
           subject: subject || null,
           dueDate: dueDate || null,
-          priority: priority || 2,
+          priority: priority || 'Media', // Use string value directly
           description: description || '',
           type: type || 'tarea',
           completed: false,
@@ -56,7 +65,7 @@ export default async function handler(req, res) {
         return res.status(201).json(task);
       } catch (error) {
         console.error('Error creating task:', error);
-        return res.status(500).json({ message: 'Error al crear la tarea' });
+        return res.status(500).json({ message: 'Error al crear la tarea', details: error.message });
       }
     } else {
       // Método no permitido

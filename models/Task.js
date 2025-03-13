@@ -98,7 +98,7 @@ const TaskSchema = new mongoose.Schema({
   },
   priority: {
     type: String,
-    enum: ['Baja', 'Media', 'Alta'],
+    enum: ['Alta', 'Media', 'Baja'],
     default: 'Media'
   },
   status: {
@@ -161,9 +161,11 @@ const TaskSchema = new mongoose.Schema({
 
 // Middleware para establecer completedAt cuando se completa una tarea
 TaskSchema.pre('save', function(next) {
+  // Set completedAt when task is completed
   if (this.isModified('completed') && this.completed) {
     this.completedAt = new Date();
   }
+  
   next();
 });
 

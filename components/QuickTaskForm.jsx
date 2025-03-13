@@ -20,7 +20,8 @@ export default function QuickTaskForm({ onSuccess }) {
     title: '',
     subject: '',
     dueDate: '',
-    priority: 2, // Prioridad media por defecto
+    priority: 'Media', // String value for the form display
+    description: ''
   });
 
   // Cargar asignaturas cuando se monta el componente
@@ -61,61 +62,62 @@ export default function QuickTaskForm({ onSuccess }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!formData.title.trim()) {
-      toast.error('El título de la tarea es obligatorio');
-      return;
-    }
-    
     setLoading(true);
-    
-    try {
-      // Asegurar que tenemos una sesión válida antes de enviar la solicitud
-      if (!session || status !== 'authenticated') {
-        throw new Error('No hay sesión activa. Por favor, inicia sesión nuevamente.');
-      }
 
+    try {
+      // Format the data properly for the API - keep priority as string value
+      const formattedData = {
+        title: formData.title.trim(),
+        description: formData.description?.trim() || '',
+        priority: formData.priority, // Keep as string ('Alta', 'Media', 'Baja')
+        subject: formData.subject || null,
+        dueDate: formData.dueDate ? new Date(formData.dueDate).toISOString() : null,
+        type: 'tarea',
+        status: 'pendiente',
+        completed: false
+      };
+
+      // Debug information
+      console.log('Sending task data:', formattedData);
+      
       const res = await fetch('/api/tasks', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          // Incluir explícitamente el token de autorización si es necesario
-          // 'Authorization': `Bearer ${session.accessToken}`
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(formattedData),
       });
-      
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Error al guardar la tarea');
+
+      // More detailed error handling
+      if (res.ok) {
+        const data = await res.json();
+        setFormData({
+          title: '',
+          subject: '',
+          dueDate: '',
+          priority: 'Media',
+          description: ''
+        });
+        if (onSuccess) {
+          onSuccess(data);
+        }
+        toast.success('Tarea creada correctamente');
+      } else {
+        const errorText = await res.text();
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+          console.error('Server error response:', errorData);
+        } catch (e) {
+          // If the error response isn't valid JSON
+          console.error('Server error (raw):', errorText);
+          errorData = { message: 'Error al crear la tarea' };
+        }
+        throw new Error(errorData.message || 'Error al crear la tarea');
       }
-      
-      toast.success('Tarea creada correctamente');
-      
-      // Resetear el formulario
-      setFormData({
-        title: '',
-        subject: '',
-        dueDate: '',
-        priority: 2,
-      });
-      
-      // Ejecutar callback de éxito si se proporciona
-      if (onSuccess) {
-        onSuccess();
-      }
-      
     } catch (error) {
       console.error('Error saving task:', error);
-      
-      // Mensaje específico para error 401
-      if (error.message.includes('401') || error.message.includes('Unauthorized')) {
-        toast.error('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
-        // Opcionalmente redirigir al login
-        setTimeout(() => router.push('/login'), 2000);
-      } else {
-        toast.error('Error al guardar la tarea: ' + error.message);
-      }
+      toast.error(error.message || 'Error al crear la tarea');
     } finally {
       setLoading(false);
     }

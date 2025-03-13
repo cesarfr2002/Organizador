@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { format, isToday, isTomorrow, isPast } from 'date-fns';
+import { format, isToday, isTomorrow, isPast, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'react-toastify';
 import { useRouter } from 'next/router';
@@ -8,7 +8,7 @@ export default function TaskList({ tasks = [], onTaskUpdate, showPriority = fals
   const [expandedTask, setExpandedTask] = useState(null);
   const router = useRouter();
 
-  // Función mejorada para validar y manejar el toggle de completado
+  // Function to toggle task completion
   const handleToggleComplete = async (taskId, isCompleted) => {
     // Validar que tengamos un ID válido antes de hacer la solicitud
     if (!taskId || taskId === 'undefined') {
@@ -87,6 +87,29 @@ export default function TaskList({ tasks = [], onTaskUpdate, showPriority = fals
     return formattedLocation || "Sin ubicación especificada";
   };
 
+  // Calculate percentage of time spent on task
+  const calculateProgress = (task) => {
+    if (!task.estimatedTime) return 0;
+    const studyTime = task.studyTime || 0;
+    return Math.min(100, Math.round((studyTime / task.estimatedTime) * 100));
+  };
+
+  // Get days remaining until due date
+  const getDaysRemaining = (dateString) => {
+    if (!dateString) return null;
+    
+    const dueDate = new Date(dateString);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (isToday(dueDate)) return 0;
+    if (isPast(dueDate)) return -1;
+    
+    const diffTime = dueDate - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
   const getPriorityClass = (priority) => {
     switch (priority) {
       case 'Alta':
@@ -98,6 +121,18 @@ export default function TaskList({ tasks = [], onTaskUpdate, showPriority = fals
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
     }
+  };
+
+  // Get border color based on days remaining
+  const getDueDateBorderClass = (dateString) => {
+    if (!dateString) return '';
+    
+    const daysRemaining = getDaysRemaining(dateString);
+    
+    if (daysRemaining < 0) return 'border-l-4 border-red-500';
+    if (daysRemaining === 0) return 'border-l-4 border-amber-500';
+    if (daysRemaining <= 2) return 'border-l-4 border-yellow-500';
+    return '';
   };
 
   // Obtener clases y configuración según el tipo de tarea
@@ -264,20 +299,232 @@ export default function TaskList({ tasks = [], onTaskUpdate, showPriority = fals
     return isPast(new Date(dueDate)) && !isToday(new Date(dueDate));
   };
 
+  // Group tasks by date
+  const groupTasksByDate = () => {
+    const groups = {
+      overdue: { title: 'Atrasadas', tasks: [] },
+      today: { title: 'Hoy', tasks: [] },
+      tomorrow: { title: 'Mañana', tasks: [] },
+      upcoming: { title: 'Próximamente', tasks: [] },
+      noDate: { title: 'Sin fecha', tasks: [] }
+    };
+
+    tasks.forEach(task => {
+      if (!task.dueDate) {
+        groups.noDate.tasks.push(task);
+      } else {
+        const dueDate = new Date(task.dueDate);
+        if (isOverdue(dueDate)) {
+          groups.overdue.tasks.push(task);
+        } else if (isToday(dueDate)) {
+          groups.today.tasks.push(task);
+        } else if (isTomorrow(dueDate)) {
+          groups.tomorrow.tasks.push(task);
+        } else {
+          groups.upcoming.tasks.push(task);
+        }
+      }
+    });
+
+    // Only return non-empty groups
+    return Object.values(groups).filter(group => group.tasks.length > 0);
+  };
+
   // Si no hay tareas
   if (tasks.length === 0) {
     return (
       <div className="text-center py-8 text-gray-500">
-        <svg className="w-12 h-12 mx-auto mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-16 h-16 mx-auto mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
         </svg>
-        <p>No hay tareas pendientes</p>
+        <p className="text-lg font-medium">No hay tareas pendientes</p>
+        <p className="text-sm mt-1">¡Todo al día! Puedes crear nuevas tareas cuando lo necesites.</p>
+        <button 
+          onClick={() => router.push('/tasks/quick')}
+          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+        >
+          Crear tarea rápida
+        </button>
       </div>
     );
   }
 
+  // Show grouped task list
+  if (tasks.length > 5) {
+    const taskGroups = groupTasksByDate();
+    
+    return (
+      <div className="space-y-6">
+        {taskGroups.map((group, groupIndex) => (
+          <div key={groupIndex}>
+            <h3 className="text-sm font-medium text-gray-500 uppercase mb-2">{group.title}</h3>
+            <ul className="divide-y divide-gray-100 bg-white rounded-lg overflow-hidden border border-gray-200 shadow-sm">
+              {group.tasks.map((task) => (
+                <li 
+                  key={task._id} 
+                  className={`${getDueDateBorderClass(task.dueDate)} hover:bg-gray-50 transition-colors`}
+                >
+                  <div className="px-4 py-3 sm:px-6">
+                    <div className="flex items-start">
+                      {/* Checkbox de completado */}
+                      <div className="mr-3 pt-1">
+                        <input
+                          type="checkbox"
+                          checked={task.completed}
+                          onChange={() => handleToggleComplete(task._id, task.completed)}
+                          className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                        />
+                      </div>
+                      
+                      {/* Contenido principal */}
+                      <div className="flex-1 min-w-0" onClick={() => setExpandedTask(expandedTask === task._id ? null : task._id)}>
+                        <div className="flex items-center justify-between">
+                          <h4 className={`text-sm font-medium ${task.completed ? 'line-through text-gray-500' : 'text-gray-900'}`}>
+                            {task.title}
+                          </h4>
+                          <div className="flex items-center ml-2 space-x-2">
+                            {/* Task type badge */}
+                            <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-800 rounded-full">
+                              {getTaskTypeInfo(task.type).label}
+                            </span>
+                            
+                            {/* Priority badge */}
+                            {showPriority && task.priority && (
+                              <span className={`text-xs px-2 py-0.5 rounded-full ${getPriorityClass(task.priority)}`}>
+                                {task.priority}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-gray-500">
+                          {/* Subject */}
+                          {task.subject && (
+                            <div className="flex items-center">
+                              <span 
+                                className="h-2 w-2 rounded-full mr-1"
+                                style={{ backgroundColor: task.subject.color || '#718096' }}
+                              ></span>
+                              <span>{task.subject.name}</span>
+                            </div>
+                          )}
+                          
+                          {/* Due date */}
+                          {task.dueDate && (
+                            <div className={`flex items-center ${isOverdue(task.dueDate) ? 'text-red-600' : ''}`}>
+                              <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                              {formatDueDate(task.dueDate)}
+                              {getDaysRemaining(task.dueDate) !== null && getDaysRemaining(task.dueDate) > 0 && (
+                                <span className="ml-1">
+                                  ({getDaysRemaining(task.dueDate)} día{getDaysRemaining(task.dueDate) !== 1 ? 's' : ''})
+                                </span>
+                              )}
+                            </div>
+                          )}
+                          
+                          {/* Estimated time */}
+                          {task.estimatedTime > 0 && (
+                            <div className="flex items-center">
+                              <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              {task.estimatedTime} min
+                            </div>
+                          )}
+                          
+                          {/* Weight in grade */}
+                          {task.weight > 0 && (
+                            <span className="flex items-center text-purple-600 font-medium">
+                              <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                              </svg>
+                              {task.weight}% de la nota
+                            </span>
+                          )}
+                        </div>
+                        
+                        {/* Progress bar for tasks with estimated time */}
+                        {task.estimatedTime > 0 && task.studyTime > 0 && (
+                          <div className="mt-2">
+                            <div className="flex justify-between items-center text-xs mb-1">
+                              <span>Progreso</span>
+                              <span>{calculateProgress(task)}%</span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-1.5">
+                              <div 
+                                className="bg-blue-600 h-1.5 rounded-full" 
+                                style={{ width: `${calculateProgress(task)}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Detalles expandidos */}
+                        {expandedTask === task._id && (
+                          <div className="mt-3 pt-3 border-t border-gray-100">
+                            {task.description && (
+                              <p className="text-sm text-gray-600 mb-2">{task.description}</p>
+                            )}
+                            
+                            {renderTaskSpecificDetails(task)}
+                            
+                            {/* Tags */}
+                            {task.tags && task.tags.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-2">
+                                {task.tags.map((tag, idx) => (
+                                  <span key={idx} className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">
+                                    #{tag}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            
+                            {/* Action buttons */}
+                            <div className="mt-3 flex space-x-2">
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  router.push(`/tasks/${task._id}/edit`);
+                                }}
+                                className="text-xs px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700 flex items-center transition-colors"
+                              >
+                                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                                Editar
+                              </button>
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  router.push(`/pomodoro?taskId=${task._id}`);
+                                }}
+                                className="text-xs px-3 py-1 bg-red-100 hover:bg-red-200 rounded text-red-700 flex items-center transition-colors"
+                              >
+                                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Pomodoro
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // Default task list for small number of tasks
   return (
-    <ul className="divide-y divide-gray-200">
+    <ul className="divide-y divide-gray-200 bg-white rounded-lg overflow-hidden border border-gray-200 shadow-sm">
       {tasks.map((task) => {
         // Validar que la tarea tenga un ID válido
         if (!task || !task._id) {
@@ -290,122 +537,146 @@ export default function TaskList({ tasks = [], onTaskUpdate, showPriority = fals
         return (
           <li 
             key={task._id} 
-            className={`py-3 ${expandedTask === task._id ? 'bg-gray-50' : ''} ${typeInfo.borderClass}`}
+            className={`hover:bg-gray-50 transition-colors ${getDueDateBorderClass(task.dueDate)} ${expandedTask === task._id ? 'bg-gray-50' : ''}`}
           >
-            <div className="flex items-start">
-              {/* Checkbox de completado */}
-              <div className="mr-3 pt-1">
-                <input
-                  type="checkbox"
-                  checked={task.completed}
-                  onChange={() => handleToggleComplete(task._id, task.completed)}
-                  className={`h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 
-                    ${task.completed ? 'opacity-50' : ''}`}
-                />
-              </div>
-              
-              {/* Contenido de la tarea */}
-              <div className="flex-1 min-w-0" onClick={() => setExpandedTask(expandedTask === task._id ? null : task._id)}>
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center">
-                    <span className="text-gray-500 mr-2">{typeInfo.icon}</span>
-                    <h3 className={`text-sm font-medium ${task.completed ? 'line-through text-gray-500' : 'text-gray-900'}`}>
+            <div className="px-4 py-3 sm:px-6">
+              <div className="flex items-start">
+                {/* Checkbox de completado */}
+                <div className="mr-3 pt-1">
+                  <input
+                    type="checkbox"
+                    checked={task.completed}
+                    onChange={() => handleToggleComplete(task._id, task.completed)}
+                    className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                  />
+                </div>
+                
+                {/* Contenido de la tarea */}
+                <div className="flex-1 min-w-0" onClick={() => setExpandedTask(expandedTask === task._id ? null : task._id)}>
+                  <div className="flex items-center justify-between">
+                    <h4 className={`text-sm font-medium ${task.completed ? 'line-through text-gray-500' : 'text-gray-900'}`}>
                       {task.title}
-                    </h3>
-                  </div>
-                  
-                  {/* Fecha de entrega */}
-                  <div className={`text-xs font-medium ml-2 ${
-                    isOverdue(task.dueDate) ? 'text-red-600' : 'text-gray-500'
-                  }`}>
-                    {formatDueDate(task.dueDate)}
-                  </div>
-                </div>
-                
-                {/* Detalles adicionales como asignatura y prioridad */}
-                <div className="flex items-center mt-1 space-x-2 ml-6">
-                  {task.subject && (
-                    <>
-                      <span 
-                        className="inline-block h-2 w-2 rounded-full mr-1"
-                        style={{ backgroundColor: task.subject.color || '#718096' }}
-                      ></span>
-                      <span className="text-xs text-gray-500">
-                        {task.subject.name}
-                      </span>
-                    </>
-                  )}
-                  
-                  {showPriority && task.priority && (
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${getPriorityClass(task.priority)}`}>
-                      {task.priority}
-                    </span>
-                  )}
-                  
-                  {showCategory && (
-                    <span className="text-xs bg-gray-100 px-2 py-0.5 rounded-full">
-                      {typeInfo.label}
-                    </span>
-                  )}
-                  
-                  {task.weight > 0 && (
-                    <span className="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full">
-                      {task.weight}% de la nota
-                    </span>
-                  )}
-                  
-                  {task.estimatedTime > 0 && (
-                    <span className="text-xs text-gray-500 flex items-center">
-                      <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      {task.estimatedTime} min
-                    </span>
-                  )}
-                </div>
-                
-                {/* Detalles expandidos */}
-                {expandedTask === task._id && (
-                  <div className="mt-2 ml-6">
-                    {/* Descripción general */}
-                    {task.description && (
-                      <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded mb-2">
-                        {task.description}
-                      </div>
-                    )}
+                    </h4>
                     
-                    {/* Detalles específicos del tipo de tarea */}
-                    {renderTaskSpecificDetails(task)}
-                    
-                    {/* Etiquetas */}
-                    {task.tags && task.tags.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {task.tags.map((tag, idx) => (
-                          <span key={idx} className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">
-                            #{tag}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                    
-                    {/* Botones de acción para tareas expandidas */}
-                    <div className="mt-3 flex space-x-2">
-                      <button 
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          router.push(`/tasks/edit/${task._id}`);
-                        }}
-                        className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700 flex items-center"
-                      >
+                    {/* Due date with visual indicator */}
+                    {task.dueDate && (
+                      <div className={`ml-2 text-xs font-medium flex items-center ${
+                        isOverdue(task.dueDate) ? 'text-red-600' : isToday(task.dueDate) ? 'text-amber-600' : 'text-gray-500'
+                      }`}>
                         <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
-                        Editar
-                      </button>
-                    </div>
+                        {formatDueDate(task.dueDate)}
+                        {isOverdue(task.dueDate) && <span className="ml-1">(Atrasada)</span>}
+                      </div>
+                    )}
                   </div>
-                )}
+                  
+                  {/* Info badges */}
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    {/* Type and icon */}
+                    <div className="flex items-center text-xs text-gray-600">
+                      {typeInfo.icon}
+                      <span>{typeInfo.label}</span>
+                    </div>
+                    
+                    {/* Subject with color dot */}
+                    {task.subject && (
+                      <div className="flex items-center text-xs text-gray-600">
+                        <span 
+                          className="inline-block h-2 w-2 rounded-full mr-1"
+                          style={{ backgroundColor: task.subject.color || '#718096' }}
+                        ></span>
+                        <span>{task.subject.name}</span>
+                      </div>
+                    )}
+                    
+                    {/* Priority badge */}
+                    {showPriority && task.priority && (
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${getPriorityClass(task.priority)}`}>
+                        {task.priority}
+                      </span>
+                    )}
+                    
+                    {/* Weight indicator */}
+                    {task.weight > 0 && (
+                      <span className="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full">
+                        {task.weight}% de la nota
+                      </span>
+                    )}
+                  </div>
+                  
+                  {/* Progress bar for tasks with time */}
+                  {task.estimatedTime > 0 && (
+                    <div className="mt-2">
+                      <div className="flex justify-between items-center text-xs mb-1">
+                        <span className="flex items-center">
+                          <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          {task.studyTime || 0} / {task.estimatedTime} min
+                        </span>
+                        <span>{calculateProgress(task)}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-1.5">
+                        <div 
+                          className="bg-blue-600 h-1.5 rounded-full" 
+                          style={{ width: `${calculateProgress(task)}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Detalles expandidos */}
+                  {expandedTask === task._id && (
+                    <div className="mt-3 pt-3 border-t border-gray-100">
+                      {task.description && (
+                        <p className="text-sm text-gray-600 mb-2">{task.description}</p>
+                      )}
+                      
+                      {renderTaskSpecificDetails(task)}
+                      
+                      {/* Tags */}
+                      {task.tags && task.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {task.tags.map((tag, idx) => (
+                            <span key={idx} className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">
+                              #{tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {/* Action buttons */}
+                      <div className="mt-3 flex space-x-2">
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/tasks/${task._id}/edit`);
+                          }}
+                          className="text-xs px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700 flex items-center transition-colors"
+                        >
+                          <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                          Editar
+                        </button>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/pomodoro?taskId=${task._id}`);
+                          }}
+                          className="text-xs px-3 py-1 bg-red-100 hover:bg-red-200 rounded text-red-700 flex items-center transition-colors"
+                        >
+                          <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          Pomodoro
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </li>
