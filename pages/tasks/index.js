@@ -7,6 +7,29 @@ import Layout from '../../components/Layout';
 import { toast } from 'react-toastify';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import KanbanTaskCard from '../../components/KanbanTaskCard';
+import CalendarTaskView from '../../components/CalendarTaskView';
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+
+// Añadimos este fix para React.StrictMode
+// Esta función arregla problemas con react-beautiful-dnd en React 18 / StrictMode
+const StrictModeDroppable = ({ children, ...props }) => {
+  const [enabled, setEnabled] = useState(false);
+  
+  useEffect(() => {
+    const animation = requestAnimationFrame(() => setEnabled(true));
+    return () => {
+      cancelAnimationFrame(animation);
+      setEnabled(false);
+    };
+  }, []);
+  
+  if (!enabled) {
+    return null;
+  }
+  
+  return <Droppable {...props}>{children}</Droppable>;
+};
 
 export default function Tasks() {
   const { data: session, status } = useSession();
@@ -210,6 +233,67 @@ export default function Tasks() {
 
   const handleStartTask = (taskId) => {
     router.push(`/pomodoro?taskId=${taskId}`);
+  };
+
+  // Nueva función para manejar el final del drag and drop
+  const handleDragEnd = async (result) => {
+    const { destination, source, draggableId } = result;
+    
+    // Si no hay destino (usuario soltó fuera de una columna) o
+    // si el destino es el mismo que la fuente, no hacer nada
+    if (!destination || 
+        (destination.droppableId === source.droppableId && 
+         destination.index === source.index)) {
+      return;
+    }
+    
+    // Obtener la tarea que se está moviendo
+    const taskId = draggableId;
+    
+    // Determinar el nuevo estado basado en la columna de destino
+    let newStatus;
+    let completed = false;
+    
+    switch (destination.droppableId) {
+      case 'pending':
+        newStatus = 'pendiente';
+        completed = false;
+        break;
+      case 'in-progress':
+        newStatus = 'en_progreso';
+        completed = false;
+        break;
+      case 'completed':
+        newStatus = 'completada';
+        completed = true;
+        break;
+      default:
+        return;
+    }
+    
+    try {
+      // Actualizamos el estado de la tarea en la base de datos
+      const res = await fetch(`/api/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          status: newStatus,
+          completed: completed
+        }),
+      });
+
+      if (res.ok) {
+        toast.success(`Tarea movida a ${newStatus.replace('_', ' ')}`);
+        fetchTasks();
+      } else {
+        throw new Error('Error al actualizar la tarea');
+      }
+    } catch (error) {
+      console.error('Error updating task:', error);
+      toast.error('Error al actualizar la tarea');
+    }
   };
 
   if (status === 'loading' || loading) {
@@ -531,65 +615,159 @@ export default function Tasks() {
           <CalendarTaskView tasks={tasks} />
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Kanban view */}
-          <div className="bg-white rounded-lg shadow p-4">
-            <h3 className="text-lg font-medium text-gray-700 mb-3 flex items-center">
-              <span className="w-3 h-3 bg-yellow-500 rounded-full mr-2"></span>
-              Pendientes
-            </h3>
-            <div className="space-y-3">
-              {tasks
-                .filter(task => !task.completed)
-                .map(task => (
-                  <KanbanTaskCard 
-                    key={task._id} 
-                    task={task} 
-                    onStatusChange={() => toggleTaskStatus(task._id, task.completed)}
-                  />
-                ))
-              }
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Columna: Pendientes */}
+            <div className="bg-white rounded-lg shadow p-4">
+              <h3 className="text-lg font-medium text-gray-700 mb-3 flex items-center">
+                <span className="w-3 h-3 bg-yellow-500 rounded-full mr-2"></span>
+                Pendientes
+              </h3>
+              <StrictModeDroppable droppableId="pending">
+                {(provided, snapshot) => (
+                  <div 
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
+                    className={`space-y-3 min-h-[200px] p-2 ${
+                      snapshot.isDraggingOver ? 'bg-yellow-50 border-2 border-dashed border-yellow-200' : ''
+                    }`}
+                  >
+                    {tasks
+                      .filter(task => !task.completed && (!task.status || task.status === 'pendiente'))
+                      .map((task, index) => (
+                        <Draggable 
+                          key={task._id} 
+                          draggableId={task._id} 
+                          index={index}
+                        >
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              {...provided.dragHandleProps}
+                              className={snapshot.isDragging ? 'opacity-75' : ''}
+                            >
+                              <KanbanTaskCard 
+                                task={task} 
+                                onStatusChange={() => toggleTaskStatus(task._id, task.completed)}
+                                isDragging={snapshot.isDragging}
+                              />
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                    {provided.placeholder}
+                    {tasks.filter(task => !task.completed && (!task.status || task.status === 'pendiente')).length === 0 && (
+                      <div className="text-center p-4 text-gray-500 text-sm border border-dashed border-gray-300 rounded">
+                        Arrastra tareas aquí
+                      </div>
+                    )}
+                  </div>
+                )}
+              </StrictModeDroppable>
+            </div>
+            
+            {/* Columna: En progreso */}
+            <div className="bg-white rounded-lg shadow p-4">
+              <h3 className="text-lg font-medium text-gray-700 mb-3 flex items-center">
+                <span className="w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
+                En progreso
+              </h3>
+              <StrictModeDroppable droppableId="in-progress">
+                {(provided, snapshot) => (
+                  <div 
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
+                    className={`space-y-3 min-h-[200px] p-2 ${
+                      snapshot.isDraggingOver ? 'bg-blue-50 border-2 border-dashed border-blue-200' : ''
+                    }`}
+                  >
+                    {tasks
+                      .filter(task => !task.completed && task.status === 'en_progreso')
+                      .map((task, index) => (
+                        <Draggable 
+                          key={task._id} 
+                          draggableId={task._id} 
+                          index={index}
+                        >
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              {...provided.dragHandleProps}
+                              className={snapshot.isDragging ? 'opacity-75' : ''}
+                            >
+                              <KanbanTaskCard 
+                                task={task} 
+                                onStatusChange={() => toggleTaskStatus(task._id, task.completed)}
+                                isDragging={snapshot.isDragging}
+                              />
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                    {provided.placeholder}
+                    {tasks.filter(task => !task.completed && task.status === 'en_progreso').length === 0 && (
+                      <div className="text-center p-4 text-gray-500 text-sm border border-dashed border-gray-300 rounded">
+                        Arrastra tareas aquí
+                      </div>
+                    )}
+                  </div>
+                )}
+              </StrictModeDroppable>
+            </div>
+            
+            {/* Columna: Completadas */}
+            <div className="bg-white rounded-lg shadow p-4">
+              <h3 className="text-lg font-medium text-gray-700 mb-3 flex items-center">
+                <span className="w-3 h-3 bg-green-500 rounded-full mr-2"></span>
+                Completadas
+              </h3>
+              <StrictModeDroppable droppableId="completed">
+                {(provided, snapshot) => (
+                  <div 
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
+                    className={`space-y-3 min-h-[200px] p-2 ${
+                      snapshot.isDraggingOver ? 'bg-green-50 border-2 border-dashed border-green-200' : ''
+                    }`}
+                  >
+                    {tasks
+                      .filter(task => task.completed)
+                      .map((task, index) => (
+                        <Draggable 
+                          key={task._id} 
+                          draggableId={task._id} 
+                          index={index}
+                        >
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              {...provided.dragHandleProps}
+                              className={snapshot.isDragging ? 'opacity-75' : ''}
+                            >
+                              <KanbanTaskCard 
+                                task={task} 
+                                onStatusChange={() => toggleTaskStatus(task._id, task.completed)}
+                                isDragging={snapshot.isDragging}
+                              />
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                    {provided.placeholder}
+                    {tasks.filter(task => task.completed).length === 0 && (
+                      <div className="text-center p-4 text-gray-500 text-sm border border-dashed border-gray-300 rounded">
+                        Arrastra tareas aquí
+                      </div>
+                    )}
+                  </div>
+                )}
+              </StrictModeDroppable>
             </div>
           </div>
-          
-          <div className="bg-white rounded-lg shadow p-4">
-            <h3 className="text-lg font-medium text-gray-700 mb-3 flex items-center">
-              <span className="w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
-              En progreso
-            </h3>
-            <div className="space-y-3">
-              {tasks
-                .filter(task => task.status === 'en_progreso')
-                .map(task => (
-                  <KanbanTaskCard 
-                    key={task._id} 
-                    task={task} 
-                    onStatusChange={() => toggleTaskStatus(task._id, task.completed)}
-                  />
-                ))
-              }
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-lg shadow p-4">
-            <h3 className="text-lg font-medium text-gray-700 mb-3 flex items-center">
-              <span className="w-3 h-3 bg-green-500 rounded-full mr-2"></span>
-              Completadas
-            </h3>
-            <div className="space-y-3">
-              {tasks
-                .filter(task => task.completed)
-                .map(task => (
-                  <KanbanTaskCard 
-                    key={task._id} 
-                    task={task} 
-                    onStatusChange={() => toggleTaskStatus(task._id, task.completed)}
-                  />
-                ))
-              }
-            </div>
-          </div>
-        </div>
+        </DragDropContext>
       )}
     </Layout>
   );

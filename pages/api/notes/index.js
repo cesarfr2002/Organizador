@@ -1,9 +1,10 @@
 import dbConnect from '../../../lib/dbConnect';
 import Note from '../../../models/Note';
-import { getSession } from 'next-auth/react';
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "../auth/[...nextauth]";
 
 export default async function handler(req, res) {
-  const session = await getSession({ req });
+  const session = await getServerSession(req, res, authOptions);
   
   if (!session) {
     return res.status(401).json({ error: 'No autorizado' });
@@ -15,7 +16,7 @@ export default async function handler(req, res) {
   const userId = session.user.id;
   
   switch (method) {
-    // Obtener todas las notas del usuario con filtros opcionales
+    // Obtener todas las notas del usuario con filtros opcionales y ordenación
     case 'GET':
       try {
         let query = { userId };
@@ -30,9 +31,24 @@ export default async function handler(req, res) {
           query.tags = req.query.tag;
         }
         
+        // Buscar por texto (en título y contenido)
+        if (req.query.search) {
+          const searchRegex = new RegExp(req.query.search, 'i');
+          query.$or = [
+            { title: searchRegex },
+            { content: searchRegex }
+          ];
+        }
+        
+        // Ordenación
+        let sort = {};
+        const sortField = req.query.sort || 'updatedAt';
+        const sortOrder = req.query.order === 'asc' ? 1 : -1;
+        sort[sortField] = sortOrder;
+        
         const notes = await Note.find(query)
           .populate('subject', 'name color')
-          .sort({ updatedAt: -1 });
+          .sort(sort);
         
         res.status(200).json(notes);
       } catch (error) {
