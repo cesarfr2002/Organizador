@@ -8,8 +8,23 @@ export default function TaskList({ tasks = [], onTaskUpdate, showPriority = fals
   const [expandedTask, setExpandedTask] = useState(null);
   const router = useRouter();
 
+  // Función mejorada para validar y manejar el toggle de completado
   const handleToggleComplete = async (taskId, isCompleted) => {
+    // Validar que tengamos un ID válido antes de hacer la solicitud
+    if (!taskId || taskId === 'undefined') {
+      console.error('Error: No se puede actualizar tarea con ID inválido:', taskId);
+      toast.error('Error al actualizar: ID de tarea inválido');
+      return;
+    }
+
     try {
+      // Llamar a la función de callback si existe, en lugar de hacer la solicitud directamente
+      if (onTaskUpdate && typeof onTaskUpdate === 'function') {
+        onTaskUpdate(taskId, isCompleted);
+        return;
+      }
+
+      // Si no hay un callback, hacer la solicitud API directamente (fallback)
       const res = await fetch(`/api/tasks/${taskId}`, {
         method: 'PATCH',
         headers: {
@@ -22,9 +37,9 @@ export default function TaskList({ tasks = [], onTaskUpdate, showPriority = fals
         if (!isCompleted) {
           toast.success('¡Tarea completada!');
         }
-        if (onTaskUpdate) onTaskUpdate();
       } else {
-        toast.error('Error al actualizar tarea');
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Error al actualizar tarea');
       }
     } catch (error) {
       console.error('Error toggling task completion:', error);
@@ -264,6 +279,12 @@ export default function TaskList({ tasks = [], onTaskUpdate, showPriority = fals
   return (
     <ul className="divide-y divide-gray-200">
       {tasks.map((task) => {
+        // Validar que la tarea tenga un ID válido
+        if (!task || !task._id) {
+          console.error('Tarea con ID inválido:', task);
+          return null; // No renderizar tareas sin ID válido
+        }
+        
         const typeInfo = getTaskTypeInfo(task.type);
         
         return (

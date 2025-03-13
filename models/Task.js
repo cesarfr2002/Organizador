@@ -1,6 +1,17 @@
 import mongoose from 'mongoose';
 
-// Tipos de tareas específicos con sus propios campos
+const StudySessionSchema = new mongoose.Schema({
+  date: {
+    type: Date,
+    default: Date.now
+  },
+  minutes: {
+    type: Number,
+    required: true
+  },
+  notes: String
+});
+
 const ExamTaskSchema = new mongoose.Schema({
   topics: [String],
   duration: {
@@ -73,7 +84,7 @@ const PresentationTaskSchema = new mongoose.Schema({
 const TaskSchema = new mongoose.Schema({
   title: {
     type: String,
-    required: true,
+    required: [true, 'Por favor proporciona un título para la tarea'],
     trim: true
   },
   description: {
@@ -82,12 +93,12 @@ const TaskSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['examen', 'proyecto', 'tarea', 'lectura', 'presentacion', 'laboratorio', 'otro'],
+    enum: ['tarea', 'examen', 'proyecto', 'lectura', 'presentacion', 'laboratorio', 'otro'],
     default: 'tarea'
   },
   priority: {
     type: String,
-    enum: ['Alta', 'Media', 'Baja'],
+    enum: ['Baja', 'Media', 'Alta'],
     default: 'Media'
   },
   status: {
@@ -133,6 +144,11 @@ const TaskSchema = new mongoose.Schema({
     required: true,
     ref: 'User'
   },
+  studyTime: {
+    type: Number,
+    default: 0
+  },
+  studySessions: [StudySessionSchema],
   // Campos específicos según el tipo de tarea
   examDetails: ExamTaskSchema,
   projectDetails: ProjectTaskSchema,

@@ -123,7 +123,7 @@ export default function StudyTimer() {
   }, []);
 
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex flex-col items-center dark:bg-gray-800 dark:text-white">
       {/* Selector de modo */}
       <div className="flex space-x-2 mb-4">
         <button 
@@ -131,7 +131,7 @@ export default function StudyTimer() {
           className={`px-3 py-1 text-sm rounded-full ${
             mode === 'pomodoro' 
               ? 'bg-red-500 text-white' 
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600'
           }`}
         >
           Pomodoro
@@ -141,7 +141,7 @@ export default function StudyTimer() {
           className={`px-3 py-1 text-sm rounded-full ${
             mode === 'shortBreak' 
               ? 'bg-green-500 text-white' 
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600'
           }`}
         >
           Descanso corto
@@ -151,7 +151,7 @@ export default function StudyTimer() {
           className={`px-3 py-1 text-sm rounded-full ${
             mode === 'longBreak' 
               ? 'bg-blue-500 text-white' 
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600'
           }`}
         >
           Descanso largo
@@ -163,7 +163,7 @@ export default function StudyTimer() {
         <svg className="w-full h-full" viewBox="0 0 100 100">
           {/* Círculo de fondo */}
           <circle
-            className="stroke-current text-gray-200"
+            className="stroke-current text-gray-200 dark:text-gray-700"
             cx="50"
             cy="50"
             r="45"
@@ -194,7 +194,7 @@ export default function StudyTimer() {
           <div className="text-3xl font-bold">
             {formatTime(seconds)}
           </div>
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-gray-500 dark:text-gray-400">
             {mode === 'pomodoro' 
               ? 'Tiempo de estudio' 
               : mode === 'shortBreak' 
@@ -209,7 +209,7 @@ export default function StudyTimer() {
       <div className="flex space-x-4 mt-6">
         {!isActive ? (
           <button
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded dark:bg-blue-600 dark:hover:bg-blue-700"
             onClick={startTimer}
           >
             Iniciar
@@ -218,21 +218,21 @@ export default function StudyTimer() {
           <>
             {isPaused ? (
               <button
-                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
+                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded dark:bg-green-600 dark:hover:bg-green-700"
                 onClick={resumeTimer}
               >
                 Reanudar
               </button>
             ) : (
               <button
-                className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded"
+                className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded dark:bg-yellow-600 dark:hover:bg-yellow-700"
                 onClick={pauseTimer}
               >
                 Pausar
               </button>
             )}
             <button
-              className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded"
+              className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded dark:bg-gray-600 dark:hover:bg-gray-700"
               onClick={resetTimer}
             >
               Reiniciar
@@ -242,7 +242,7 @@ export default function StudyTimer() {
       </div>
       
       {/* Contador de ciclos */}
-      <div className="mt-4 text-sm text-gray-500">
+      <div className="mt-4 text-sm text-gray-500 dark:text-gray-400">
         Ciclos completados: {cycles}
       </div>
     </div>

@@ -155,8 +155,8 @@ export default function DailySchedule({ schedule = [], selectedDate = new Date()
   // Si no hay horario para mostrar
   if (processedSchedule.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-500">
-        <svg className="w-12 h-12 mx-auto mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+        <svg className="w-12 h-12 mx-auto mb-3 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
         </svg>
         <p>No hay clases programadas para {isSameDay(selectedDate, new Date()) ? 'hoy' : format(selectedDate, "EEEE d 'de' MMMM", { locale: es })}</p>
@@ -247,13 +247,13 @@ export default function DailySchedule({ schedule = [], selectedDate = new Date()
       {/* Próxima clase o clase actual */}
       {nextClass && (
         <div className="mb-4">
-          <div className="text-sm text-gray-500 mb-1 flex justify-between items-center">
+          <div className="text-sm text-gray-500 dark:text-gray-400 mb-1 flex justify-between items-center">
             <div>
               {nextClass.status === 'current' ? 'Clase actual' : 'Próxima clase'} 
-              {timeUntilNext && <span className="ml-1 text-blue-600">{timeUntilNext}</span>}
+              {timeUntilNext && <span className="ml-1 text-blue-600 dark:text-blue-400">{timeUntilNext}</span>}
             </div>
             {requiresTravel && (
-              <div className="text-amber-600 flex items-center">
+              <div className="text-amber-600 dark:text-amber-400 flex items-center">
                 <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
@@ -262,7 +262,7 @@ export default function DailySchedule({ schedule = [], selectedDate = new Date()
             )}
           </div>
           <div 
-            className="rounded-md p-3 border-l-4"
+            className="rounded-md p-3 border-l-4 dark:bg-gray-800"
             style={{ 
               borderColor: nextClass.color || '#3182ce',
               backgroundColor: nextClass.color ? `${nextClass.color}10` : '#ebf8ff'
@@ -270,17 +270,17 @@ export default function DailySchedule({ schedule = [], selectedDate = new Date()
           >
             <div className="flex justify-between items-start">
               <div>
-                <h3 className="font-medium">{nextClass.name}</h3>
+                <h3 className="font-medium dark:text-white">{nextClass.name}</h3>
                 {nextClass.professor && (
-                  <p className="text-xs text-gray-600 mt-1">Prof. {nextClass.professor}</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Prof. {nextClass.professor}</p>
                 )}
               </div>
-              <span className="text-sm bg-white px-2 py-1 rounded">
+              <span className="text-sm bg-white dark:bg-gray-700 px-2 py-1 rounded dark:text-gray-200">
                 {nextClass.startTime} - {nextClass.endTime}
               </span>
             </div>
             {nextClass.location && (
-              <div className="mt-2 text-sm text-gray-600 flex items-start">
+              <div className="mt-2 text-sm text-gray-600 dark:text-gray-400 flex items-start">
                 <svg className="w-4 h-4 mr-1 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -301,21 +301,21 @@ export default function DailySchedule({ schedule = [], selectedDate = new Date()
             key={blockIndex} 
             className={`rounded-md p-2 ${
               block.status === 'past' 
-                ? 'bg-gray-100 opacity-60' 
+                ? 'bg-gray-100 opacity-60 dark:bg-gray-700' 
                 : block.status === 'current' 
-                  ? 'bg-blue-50 border border-blue-100' 
-                  : 'bg-gray-50'
+                  ? 'bg-blue-50 border border-blue-100 dark:bg-blue-900 dark:border-blue-800' 
+                  : 'bg-gray-50 dark:bg-gray-800'
             }`}
           >
             <div className="flex items-center justify-between mb-1">
-              <div className="text-xs font-medium text-gray-500">{block.timeBlock}</div>
+              <div className="text-xs font-medium text-gray-500 dark:text-gray-400">{block.timeBlock}</div>
               {block.status === 'current' && (
-                <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
+                <span className="text-xs bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-200 px-2 py-0.5 rounded-full">
                   Ahora
                 </span>
               )}
               {block.status === 'past' && (
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-gray-500 dark:text-gray-400">
                   Finalizado
                 </span>
               )}
@@ -327,10 +327,10 @@ export default function DailySchedule({ schedule = [], selectedDate = new Date()
                   key={index}
                   className={`p-2 rounded-md border flex items-start ${
                     item.status === 'past' 
-                      ? 'bg-white opacity-60' 
+                      ? 'bg-white opacity-60 dark:bg-gray-700' 
                       : item.status === 'current' 
-                        ? 'bg-white border-blue-200' 
-                        : 'bg-white'
+                        ? 'bg-white border-blue-200 dark:bg-gray-800 dark:border-blue-800' 
+                        : 'bg-white dark:bg-gray-800'
                   }`}
                   style={{ 
                     borderLeftWidth: '4px',
@@ -341,7 +341,7 @@ export default function DailySchedule({ schedule = [], selectedDate = new Date()
                     <div className="flex justify-between items-center">
                       <div className="flex items-center">
                         <span className={`text-sm font-medium ${
-                          item.status === 'past' ? 'text-gray-500' : 'text-gray-800'
+                          item.status === 'past' ? 'text-gray-500 dark:text-gray-400' : 'text-gray-800 dark:text-gray-200'
                         }`}>
                           {item.name}
                         </span>
@@ -349,12 +349,12 @@ export default function DailySchedule({ schedule = [], selectedDate = new Date()
                           <span className="ml-2 inline-block w-2 h-2 bg-green-500 rounded-full"></span>
                         )}
                       </div>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
                         {item.startTime} - {item.endTime}
                       </span>
                     </div>
                     {item.location && (
-                      <div className="text-xs text-gray-500 mt-0.5 flex">
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 flex">
                         <svg className="w-3 h-3 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
                         </svg>
@@ -369,20 +369,20 @@ export default function DailySchedule({ schedule = [], selectedDate = new Date()
         ))}
         
         {groupedSchedule.length === 0 && (
-          <div className="text-center py-4 text-gray-500">
+          <div className="text-center py-4 text-gray-500 dark:text-gray-400">
             No hay más clases programadas para hoy
           </div>
         )}
       </div>
 
       {/* Leyenda del estado */}
-      <div className="mt-4 pt-4 border-t border-gray-200 flex justify-center space-x-4 text-xs text-gray-500">
+      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
         <div className="flex items-center">
           <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-1"></span>
           Clase actual
         </div>
         <div className="flex items-center">
-          <span className="inline-block w-2 h-2 bg-gray-300 rounded-full mr-1"></span>
+          <span className="inline-block w-2 h-2 bg-gray-300 dark:bg-gray-500 rounded-full mr-1"></span>
           Clase pasada
         </div>
         <div className="flex items-center">

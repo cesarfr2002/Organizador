@@ -4,6 +4,7 @@ import DatePicker, { registerLocale } from 'react-datepicker';
 import { es } from 'date-fns/locale';
 import 'react-datepicker/dist/react-datepicker.css';
 import { toast } from 'react-toastify';
+import StudyTimeDisplay from './StudyTimeDisplay';
 
 // Registrar el locale español
 registerLocale('es', es);
@@ -126,6 +127,19 @@ export default function TaskForm({ task, subjects, isEditing = false }) {
       setLoading(false);
     }
   };
+
+  // Define preset time options
+  const timePresets = [
+    { value: 15, label: '15 minutos' },
+    { value: 30, label: '30 minutos' },
+    { value: 45, label: '45 minutos' },
+    { value: 60, label: '1 hora' },
+    { value: 90, label: '1 hora 30 min' },
+    { value: 120, label: '2 horas' },
+    { value: 180, label: '3 horas' },
+    { value: 240, label: '4 horas' },
+    { value: 300, label: '5 horas' },
+  ];
 
   // Renderizar los campos específicos según el tipo de tarea
   const renderTypeSpecificFields = () => {
@@ -387,261 +401,315 @@ export default function TaskForm({ task, subjects, isEditing = false }) {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-xl font-bold mb-6">
-        {isEditing ? 'Editar Tarea' : 'Nueva Tarea'}
-      </h2>
-      
-      <form onSubmit={handleSubmit}>
-        {/* Campos básicos */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          {/* Título */}
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Título *
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <h2 className="text-xl font-bold mb-6 dark:text-white">
+            {isEditing ? 'Editar Tarea' : 'Nueva Tarea'}
+          </h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Título *
+              </label>
+              <input
+                type="text"
+                name="title"
+                value={formData.title}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-md p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                required
+                placeholder="Título de la tarea"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Tipo de tarea
+              </label>
+              <select
+                name="type"
+                value={formData.type}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-md p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              >
+                <option value="tarea">Tarea</option>
+                <option value="examen">Examen</option>
+                <option value="proyecto">Proyecto</option>
+                <option value="lectura">Lectura</option>
+                <option value="presentacion">Presentación</option>
+                <option value="laboratorio">Laboratorio</option>
+                <option value="otro">Otro</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Asignatura
+              </label>
+              <select
+                name="subject"
+                value={formData.subject}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-md p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              >
+                <option value="">-- Seleccionar asignatura --</option>
+                {subjects?.map((subject) => (
+                  <option key={subject._id} value={subject._id}>
+                    {subject.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Prioridad
+              </label>
+              <select
+                name="priority"
+                value={formData.priority}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-md p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              >
+                <option value="Baja">Baja</option>
+                <option value="Media">Media</option>
+                <option value="Alta">Alta</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Estado
+              </label>
+              <select
+                name="status"
+                value={formData.status}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-md p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              >
+                <option value="pendiente">Pendiente</option>
+                <option value="en_progreso">En progreso</option>
+                <option value="completada">Completada</option>
+                <option value="cancelada">Cancelada</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Fecha de entrega
+              </label>
+              <DatePicker
+                selected={formData.dueDate}
+                onChange={handleDateChange}
+                className="w-full border border-gray-300 rounded-md p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                dateFormat="dd/MM/yyyy"
+                locale="es"
+                placeholderText="Seleccionar fecha"
+                isClearable
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Dificultad
+              </label>
+              <select
+                name="difficulty"
+                value={formData.difficulty}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-md p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              >
+                <option value="fácil">Fácil</option>
+                <option value="media">Media</option>
+                <option value="difícil">Difícil</option>
+              </select>
+            </div>
+            
+            <div className="mb-4">
+              <label htmlFor="estimatedTime" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Tiempo estimado
+              </label>
+              
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                {timePresets.map(preset => (
+                  <button
+                    key={preset.value}
+                    type="button"
+                    onClick={() => setFormData({...formData, estimatedTime: preset.value})}
+                    className={`py-2 px-3 text-sm rounded-md ${
+                      formData.estimatedTime === preset.value
+                        ? 'bg-blue-100 text-blue-700 border border-blue-300 dark:bg-blue-900 dark:text-blue-300'
+                        : 'bg-gray-100 text-gray-700 border border-gray-300 dark:bg-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+                
+                <div className="col-span-3 sm:col-span-4 md:col-span-5 mt-2">
+                  <label className="text-xs text-gray-500 dark:text-gray-400">
+                    Tiempo personalizado (minutos):
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    name="estimatedTime"
+                    value={formData.estimatedTime}
+                    onChange={handleChange}
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Peso en la nota final (%)
+              </label>
+              <input
+                type="number"
+                name="weight"
+                value={formData.weight}
+                onChange={handleNumberInput}
+                className="w-full border border-gray-300 rounded-md p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                min="0"
+                max="100"
+              />
+            </div>
+          </div>
+          
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Descripción
             </label>
-            <input
-              type="text"
-              name="title"
-              value={formData.title}
+            <textarea
+              name="description"
+              value={formData.description}
               onChange={handleChange}
-              className="w-full border border-gray-300 rounded-md p-2"
-              required
-              placeholder="Título de la tarea"
-            />
+              rows="3"
+              className="w-full border border-gray-300 rounded-md p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              placeholder="Detalles adicionales de la tarea..."
+            ></textarea>
           </div>
           
-          {/* Tipo de tarea */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Tipo de tarea
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Etiquetas
             </label>
-            <select
-              name="type"
-              value={formData.type}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-md p-2"
-            >
-              <option value="tarea">Tarea</option>
-              <option value="examen">Examen</option>
-              <option value="proyecto">Proyecto</option>
-              <option value="lectura">Lectura</option>
-              <option value="presentacion">Presentación</option>
-              <option value="laboratorio">Laboratorio</option>
-              <option value="otro">Otro</option>
-            </select>
+            <div className="flex">
+              <input
+                type="text"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
+                className="flex-1 border border-gray-300 rounded-l-md p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                placeholder="Añadir etiqueta..."
+              />
+              <button
+                type="button"
+                onClick={handleAddTag}
+                className="bg-gray-700 text-white px-4 rounded-r-md hover:bg-gray-800 dark:bg-gray-600 dark:hover:bg-gray-500"
+              >
+                +
+              </button>
+            </div>
+            {formData.tags.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {formData.tags.map((tag, index) => (
+                  <span
+                    key={index}
+                    className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 text-xs px-2 py-1 rounded-full flex items-center"
+                  >
+                    #{tag}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveTag(index)}
+                      className="ml-1 text-blue-800 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-200"
+                    >
+                      &times;
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
           
-          {/* Asignatura */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Asignatura
-            </label>
-            <select
-              name="subject"
-              value={formData.subject}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-md p-2"
-            >
-              <option value="">-- Seleccionar asignatura --</option>
-              {subjects?.map((subject) => (
-                <option key={subject._id} value={subject._id}>
-                  {subject.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {renderTypeSpecificFields()}
           
-          {/* Prioridad */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Prioridad
-            </label>
-            <select
-              name="priority"
-              value={formData.priority}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-md p-2"
-            >
-              <option value="Baja">Baja</option>
-              <option value="Media">Media</option>
-              <option value="Alta">Alta</option>
-            </select>
-          </div>
-          
-          {/* Estado */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Estado
-            </label>
-            <select
-              name="status"
-              value={formData.status}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-md p-2"
-            >
-              <option value="pendiente">Pendiente</option>
-              <option value="en_progreso">En progreso</option>
-              <option value="completada">Completada</option>
-              <option value="cancelada">Cancelada</option>
-            </select>
-          </div>
-          
-          {/* Fecha de entrega */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Fecha de entrega
-            </label>
-            <DatePicker
-              selected={formData.dueDate}
-              onChange={handleDateChange}
-              className="w-full border border-gray-300 rounded-md p-2"
-              dateFormat="dd/MM/yyyy"
-              locale="es"
-              placeholderText="Seleccionar fecha"
-              isClearable
-            />
-          </div>
-          
-          {/* Dificultad */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Dificultad
-            </label>
-            <select
-              name="difficulty"
-              value={formData.difficulty}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-md p-2"
-            >
-              <option value="fácil">Fácil</option>
-              <option value="media">Media</option>
-              <option value="difícil">Difícil</option>
-            </select>
-          </div>
-          
-          {/* Tiempo estimado */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Tiempo estimado (minutos)
-            </label>
-            <input
-              type="number"
-              name="estimatedTime"
-              value={formData.estimatedTime}
-              onChange={handleNumberInput}
-              className="w-full border border-gray-300 rounded-md p-2"
-              min="0"
-            />
-          </div>
-          
-          {/* Peso en la calificación */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Peso en la nota final (%)
-            </label>
-            <input
-              type="number"
-              name="weight"
-              value={formData.weight}
-              onChange={handleNumberInput}
-              className="w-full border border-gray-300 rounded-md p-2"
-              min="0"
-              max="100"
-            />
-          </div>
-        </div>
-        
-        {/* Descripción */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Descripción
-          </label>
-          <textarea
-            name="description"
-            value={formData.description}
-            onChange={handleChange}
-            rows="3"
-            className="w-full border border-gray-300 rounded-md p-2"
-            placeholder="Detalles adicionales de la tarea..."
-          ></textarea>
-        </div>
-        
-        {/* Etiquetas */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Etiquetas
-          </label>
-          <div className="flex">
-            <input
-              type="text"
-              value={tagInput}
-              onChange={(e) => setTagInput(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
-              className="flex-1 border border-gray-300 rounded-l-md p-2"
-              placeholder="Añadir etiqueta..."
-            />
+          <div className="flex justify-end space-x-3 mt-8">
             <button
               type="button"
-              onClick={handleAddTag}
-              className="bg-gray-700 text-white px-4 rounded-r-md hover:bg-gray-800"
+              onClick={() => router.back()}
+              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
             >
-              +
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className={`px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800
+                ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+            >
+              {loading ? (
+                <span className="flex items-center">
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Guardando...
+                </span>
+              ) : (
+                isEditing ? 'Actualizar Tarea' : 'Crear Tarea'
+              )}
             </button>
           </div>
-          {formData.tags.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-2">
-              {formData.tags.map((tag, index) => (
-                <span
-                  key={index}
-                  className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full flex items-center"
-                >
-                  #{tag}
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveTag(index)}
-                    className="ml-1 text-blue-800 hover:text-blue-900"
-                  >
-                    &times;
-                  </button>
-                </span>
-              ))}
+        </form>
+      </div>
+
+      <div className="space-y-6">
+        {isEditing && task && <StudyTimeDisplay task={task} />}
+        
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <h3 className="text-lg font-medium mb-3 dark:text-white">
+            {isEditing ? 'Consejos para completar la tarea' : 'Consejos para organizar tus tareas'}
+          </h3>
+          <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
+            <li className="flex items-start">
+              <svg className="w-5 h-5 text-blue-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              <span>Prioriza tus tareas basándote en su fecha de entrega y dificultad</span>
+            </li>
+            <li className="flex items-start">
+              <svg className="w-5 h-5 text-blue-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              <span>Divide tareas grandes en pasos más pequeños y manejables</span>
+            </li>
+            <li className="flex items-start">
+              <svg className="w-5 h-5 text-blue-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>Utiliza la técnica Pomodoro para mantener la concentración</span>
+            </li>
+          </ul>
+          {!isEditing && (
+            <div className="mt-4 text-center">
+              <a 
+                href="/pomodoro" 
+                className="text-blue-600 hover:text-blue-800 text-sm inline-flex items-center"
+              >
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Ir al temporizador Pomodoro
+              </a>
             </div>
           )}
         </div>
-        
-        {/* Campos específicos según el tipo de tarea */}
-        {renderTypeSpecificFields()}
-        
-        {/* Botones de acción */}
-        <div className="flex justify-end space-x-3 mt-8">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-          >
-            Cancelar
-          </button>
-          <button
-            type="submit"
-            disabled={loading}
-            className={`px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 
-              ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
-          >
-            {loading ? (
-              <span className="flex items-center">
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Guardando...
-              </span>
-            ) : (
-              isEditing ? 'Actualizar Tarea' : 'Crear Tarea'
-            )}
-          </button>
-        </div>
-      </form>
+      </div>
     </div>
   );
 }

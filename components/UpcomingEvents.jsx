@@ -102,8 +102,20 @@ export default function UpcomingEvents() {
     return (
       <div className="animate-pulse space-y-3">
         {[...Array(3)].map((_, idx) => (
-          <div key={idx} className="bg-gray-200 h-16 rounded-md"></div>
+          <div key={idx} className="bg-gray-200 dark:bg-gray-700 h-16 rounded-md"></div>
         ))}
+      </div>
+    );
+  }
+
+  // Si no hay tareas para mostrar
+  if (!tasks || tasks.length === 0) {
+    return (
+      <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+        <svg className="w-12 h-12 mx-auto mb-3 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+        </svg>
+        <p>No hay tareas pendientes</p>
       </div>
     );
   }
@@ -157,8 +169,8 @@ export default function UpcomingEvents() {
           onClick={() => setFilter('all')}
           className={`px-3 py-1 text-xs rounded-full mx-1 whitespace-nowrap ${
             filter === 'all' 
-              ? 'bg-blue-100 text-blue-800 border-blue-300' 
-              : 'bg-gray-100 text-gray-800 border-gray-200'
+              ? 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900 dark:text-blue-300 dark:border-blue-700' 
+              : 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600'
           } border`}
         >
           Todas
@@ -167,8 +179,8 @@ export default function UpcomingEvents() {
           onClick={() => setFilter('today')}
           className={`px-3 py-1 text-xs rounded-full mx-1 whitespace-nowrap ${
             filter === 'today' 
-              ? 'bg-amber-100 text-amber-800 border-amber-300' 
-              : 'bg-gray-100 text-gray-800 border-gray-200'
+              ? 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900 dark:text-amber-300 dark:border-amber-700' 
+              : 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600'
           } border`}
         >
           Hoy
@@ -177,8 +189,8 @@ export default function UpcomingEvents() {
           onClick={() => setFilter('week')}
           className={`px-3 py-1 text-xs rounded-full mx-1 whitespace-nowrap ${
             filter === 'week' 
-              ? 'bg-green-100 text-green-800 border-green-300' 
-              : 'bg-gray-100 text-gray-800 border-gray-200'
+              ? 'bg-green-100 text-green-800 border-green-300 dark:bg-green-900 dark:text-green-300 dark:border-green-700' 
+              : 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600'
           } border`}
         >
           Esta semana
@@ -187,8 +199,8 @@ export default function UpcomingEvents() {
           onClick={() => setFilter('priority')}
           className={`px-3 py-1 text-xs rounded-full mx-1 whitespace-nowrap ${
             filter === 'priority' 
-              ? 'bg-red-100 text-red-800 border-red-300' 
-              : 'bg-gray-100 text-gray-800 border-gray-200'
+              ? 'bg-red-100 text-red-800 border-red-300 dark:bg-red-900 dark:text-red-300 dark:border-red-700' 
+              : 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600'
           } border`}
         >
           Prioritarias
@@ -201,7 +213,7 @@ export default function UpcomingEvents() {
           {tasksToShow.map(task => (
             <div 
               key={task._id}
-              className="bg-white border rounded-md p-3 hover:shadow-md transition-shadow"
+              className="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-md p-3 hover:shadow-md transition-shadow"
             >
               <div className="flex justify-between items-start">
                 <div className="flex-1">
@@ -209,19 +221,19 @@ export default function UpcomingEvents() {
                     {/* Checkbox para completar */}
                     <button 
                       onClick={() => markAsCompleted(task._id)}
-                      className="h-5 w-5 border border-gray-300 rounded-full mr-3 mt-1 hover:bg-gray-100 flex-shrink-0"
+                      className="h-5 w-5 border border-gray-300 dark:border-gray-500 rounded-full mr-3 mt-1 hover:bg-gray-100 dark:hover:bg-gray-700 flex-shrink-0"
                     >
                       <span className="sr-only">Completar tarea</span>
                     </button>
                     
                     <div>
                       {/* Título de la tarea */}
-                      <h4 className="font-medium text-gray-900 mb-0.5">
+                      <h4 className="font-medium text-gray-900 dark:text-white mb-0.5">
                         {task.title}
                       </h4>
                       
                       {/* Detalles */}
-                      <div className="flex flex-wrap gap-2 text-xs text-gray-600">
+                      <div className="flex flex-wrap gap-2 text-xs text-gray-600 dark:text-gray-400">
                         {/* Asignatura */}
                         {task.subject && (
                           <div className="flex items-center">
@@ -256,15 +268,15 @@ export default function UpcomingEvents() {
           {/* Ver todas las tareas */}
           <button 
             onClick={() => router.push('/tasks')}
-            className="w-full text-center text-sm text-blue-600 hover:text-blue-800 py-2 rounded-md hover:bg-blue-50 transition-colors"
+            className="w-full text-center text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 py-2 rounded-md hover:bg-blue-50 dark:hover:bg-gray-700 transition-colors"
           >
             Ver todas las tareas ({tasks.length})
           </button>
         </div>
       ) : (
-        <div className="text-center py-6 text-gray-500">
-          <svg className="w-12 h-12 mx-auto mb-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        <div className="text-center py-6 text-gray-500 dark:text-gray-400">
+          <svg className="w-12 h-12 mx-auto mb-3 text-gray-400 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
           </svg>
           <p>No tienes tareas pendientes {filter !== 'all' && 'con este filtro'}</p>
           <button 

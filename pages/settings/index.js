@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
-import Head from 'next/head';
+import { useSession } from 'next-auth/react';
+import Head from 'next/head'; // Add this import
 import Layout from '../../components/Layout';
 import { toast } from 'react-toastify';
+import { useTheme } from '../../utils/ThemeContext';
 
 export default function Settings() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const { theme, toggleTheme } = useTheme();
   
   const [profileData, setProfileData] = useState({
     name: '',
@@ -20,7 +22,7 @@ export default function Settings() {
   });
   
   const [appSettings, setAppSettings] = useState({
-    theme: 'light',
+    theme: theme, // Use the current theme from context
     notificationsEnabled: true,
     emailNotifications: false,
     language: 'es'
@@ -59,17 +61,11 @@ export default function Settings() {
   };
 
   const fetchAppSettings = async () => {
-    try {
-      const res = await fetch('/api/users/settings');
-      
-      if (res.ok) {
-        const data = await res.json();
-        setAppSettings(data);
-      }
-    } catch (error) {
-      console.error('Error fetching app settings:', error);
-      // Usar valores predeterminados si hay error
-    }
+    // For now, we're just setting the theme from the context
+    setAppSettings(prev => ({
+      ...prev,
+      theme: theme
+    })); 
   };
 
   const handleProfileChange = (e) => {
@@ -88,6 +84,19 @@ export default function Settings() {
       ...prev,
       [name]: value
     }));
+  };
+
+  const handleThemeChange = () => {
+    toggleTheme(); // This already updates localStorage and document classes via ThemeContext
+    
+    setAppSettings(prev => ({
+      ...prev,
+      theme: theme === 'light' ? 'dark' : 'light'
+    }));
+    
+    toast.success('Tema cambiado correctamente');
+    
+    // No need to call saveAppSettings for theme changes
   };
 
   const updateProfile = async (e) => {
@@ -133,12 +142,18 @@ export default function Settings() {
     setSaving(true);
     
     try {
+      // We'll still save other settings except theme to the API
+      const settingsToSave = {
+        ...appSettings,
+        // Don't include theme since it's managed by localStorage
+      };
+      
       const res = await fetch('/api/users/settings', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(appSettings)
+        body: JSON.stringify(settingsToSave)
       });
       
       if (!res.ok) {
@@ -147,13 +162,6 @@ export default function Settings() {
       }
       
       toast.success('Configuración guardada correctamente');
-      
-      // Si cambia el tema, aplicar los cambios
-      if (appSettings.theme === 'dark') {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
     } catch (error) {
       console.error('Error saving app settings:', error);
       toast.error(error.message || 'Error al guardar la configuración');
@@ -179,8 +187,8 @@ export default function Settings() {
       </Head>
 
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">Configuración</h1>
-        <p className="text-gray-600 mt-2">
+        <h1 className="text-2xl font-bold dark:text-white">Configuración</h1>
+        <p className="text-gray-600 dark:text-gray-300 mt-2">
           Administra tu cuenta y preferencias de la aplicación
         </p>
       </div>
@@ -188,12 +196,12 @@ export default function Settings() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Perfil de Usuario */}
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold mb-6">Perfil de Usuario</h2>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h2 className="text-xl font-semibold mb-6 dark:text-white">Perfil de Usuario</h2>
             
             <form onSubmit={updateProfile}>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="name">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" htmlFor="name">
                   Nombre
                 </label>
                 <input
@@ -202,13 +210,13 @@ export default function Settings() {
                   name="name"
                   value={profileData.name}
                   onChange={handleProfileChange}
-                  className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                   required
                 />
               </div>
               
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="email">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" htmlFor="email">
                   Correo Electrónico
                 </label>
                 <input
@@ -217,15 +225,15 @@ export default function Settings() {
                   name="email"
                   value={profileData.email}
                   onChange={handleProfileChange}
-                  className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                   required
                 />
               </div>
               
-              <h3 className="text-lg font-medium mt-6 mb-3">Cambiar Contraseña</h3>
+              <h3 className="text-lg font-medium mt-6 mb-3 dark:text-white">Cambiar Contraseña</h3>
               
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="currentPassword">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" htmlFor="currentPassword">
                   Contraseña Actual
                 </label>
                 <input
@@ -234,12 +242,12 @@ export default function Settings() {
                   name="currentPassword"
                   value={profileData.currentPassword}
                   onChange={handleProfileChange}
-                  className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
               
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="newPassword">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" htmlFor="newPassword">
                   Nueva Contraseña
                 </label>
                 <input
@@ -248,12 +256,12 @@ export default function Settings() {
                   name="newPassword"
                   value={profileData.newPassword}
                   onChange={handleProfileChange}
-                  className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
               
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="confirmPassword">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" htmlFor="confirmPassword">
                   Confirmar Nueva Contraseña
                 </label>
                 <input
@@ -262,7 +270,7 @@ export default function Settings() {
                   name="confirmPassword"
                   value={profileData.confirmPassword}
                   onChange={handleProfileChange}
-                  className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
               
@@ -281,29 +289,36 @@ export default function Settings() {
         
         {/* Configuración de la Aplicación */}
         <div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold mb-6">Configuración de la Aplicación</h2>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h2 className="text-xl font-semibold mb-6 dark:text-white">Configuración de la Aplicación</h2>
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="theme">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" htmlFor="theme">
                   Tema
                 </label>
-                <select
-                  id="theme"
-                  name="theme"
-                  value={appSettings.theme}
-                  onChange={handleAppSettingsChange}
-                  className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="light">Claro</option>
-                  <option value="dark">Oscuro</option>
-                  <option value="system">Sistema</option>
-                </select>
+                <div className="flex items-center">
+                  <span className="mr-3 text-sm text-gray-600 dark:text-gray-400">
+                    {theme === 'light' ? 'Claro' : 'Oscuro'}
+                  </span>
+                  <button 
+                    onClick={handleThemeChange}
+                    className={`relative inline-flex items-center h-6 rounded-full w-11 ${
+                      theme === 'dark' ? 'bg-blue-600' : 'bg-gray-200'
+                    }`}
+                  >
+                    <span className="sr-only">Toggle theme</span>
+                    <span
+                      className={`inline-block w-4 h-4 transform transition bg-white rounded-full ${
+                        theme === 'dark' ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="language">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" htmlFor="language">
                   Idioma
                 </label>
                 <select
@@ -311,7 +326,7 @@ export default function Settings() {
                   name="language"
                   value={appSettings.language}
                   onChange={handleAppSettingsChange}
-                  className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="es">Español</option>
                   <option value="en">Inglés</option>
@@ -325,9 +340,9 @@ export default function Settings() {
                   name="notificationsEnabled"
                   checked={appSettings.notificationsEnabled}
                   onChange={handleAppSettingsChange}
-                  className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  className="h-4 w-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
                 />
-                <label className="ml-2 block text-sm text-gray-900" htmlFor="notificationsEnabled">
+                <label className="ml-2 block text-sm text-gray-900 dark:text-gray-300" htmlFor="notificationsEnabled">
                   Habilitar notificaciones
                 </label>
               </div>
@@ -339,9 +354,9 @@ export default function Settings() {
                   name="emailNotifications"
                   checked={appSettings.emailNotifications}
                   onChange={handleAppSettingsChange}
-                  className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  className="h-4 w-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
                 />
-                <label className="ml-2 block text-sm text-gray-900" htmlFor="emailNotifications">
+                <label className="ml-2 block text-sm text-gray-900 dark:text-gray-300" htmlFor="emailNotifications">
                   Recibir notificaciones por correo
                 </label>
               </div>

@@ -136,6 +136,10 @@ export default function Tasks() {
     return format(new Date(date), 'dd MMM yyyy', { locale: es });
   };
 
+  const handleStartTask = (taskId) => {
+    router.push(`/pomodoro?taskId=${taskId}`);
+  };
+
   if (status === 'loading' || loading) {
     return (
       <Layout>
@@ -315,6 +319,13 @@ export default function Tasks() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <button
+                        onClick={() => handleStartTask(task._id)}
+                        className="text-green-600 hover:text-green-900 mr-3"
+                        title="Comenzar con Pomodoro"
+                      >
+                        Realizar
+                      </button>
                       <Link href={`/tasks/${task._id}/edit`} className="text-blue-600 hover:text-blue-900 mr-3">
                         Editar
                       </Link>

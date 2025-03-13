@@ -5,6 +5,7 @@ import { useSession, signOut } from 'next-auth/react';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useRouter } from 'next/router';
+import { useTheme } from '../utils/ThemeContext';
 
 // Definir los componentes de iconos usados en el menú
 function HomeIcon() {
@@ -76,6 +77,7 @@ export default function Layout({ children }) {
   const { data: session } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const router = useRouter();
+  const { theme, toggleTheme } = useTheme();
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -83,7 +85,9 @@ export default function Layout({ children }) {
 
   // Función para verificar la ruta activa
   const isActive = (path) => {
-    return router.pathname === path ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white';
+    return router.pathname === path ? 
+      `${theme === 'dark' ? 'bg-gray-700 text-white' : 'bg-gray-700 text-white'}` : 
+      `${theme === 'dark' ? 'text-gray-300 hover:bg-gray-700 hover:text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'}`;
   };
 
   const MENU_ITEMS = [
@@ -98,17 +102,21 @@ export default function Layout({ children }) {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-gray-100'}`}>
       <Head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#3f51b5" />
+        <meta name="theme-color" content={theme === 'dark' ? '#1a202c' : '#3f51b5'} />
       </Head>
 
-      <ToastContainer position="top-right" autoClose={3000} />
+      <ToastContainer 
+        position="top-right" 
+        autoClose={3000} 
+        theme={theme}
+      />
 
       {/* Header */}
-      <header className="bg-blue-600 text-white shadow-md">
+      <header className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-blue-600'} text-white shadow-md`}>
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
           <div className="flex items-center">
             <button 
@@ -131,7 +139,7 @@ export default function Layout({ children }) {
               </span>
               <button 
                 onClick={() => signOut()}
-                className="bg-white text-blue-600 px-3 py-1 rounded hover:bg-gray-100 text-sm"
+                className={`${theme === 'dark' ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-white text-blue-600 hover:bg-gray-100'} px-3 py-1 rounded text-sm`}
               >
                 Cerrar Sesión
               </button>
@@ -145,9 +153,9 @@ export default function Layout({ children }) {
         {/* Sidebar - Aumentado el ancho y mejorando estilos */}
         <aside 
           className={`
-            w-72 bg-gray-800 text-white fixed h-full z-20 transition-transform transform 
+            w-72 ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-800'} text-white fixed h-full z-20 transition-transform transform 
             ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} 
-            md:relative md:translate-x-0 shadow-lg
+            md:relative md:translate-x-0 ${theme === 'dark' ? 'shadow-gray-700' : 'shadow-lg'}
           `}
         >
           <div className="p-6">
@@ -242,7 +250,7 @@ export default function Layout({ children }) {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-auto p-6 md:p-8">
+        <main className={`flex-1 overflow-auto p-6 md:p-8 ${theme === 'dark' ? 'bg-gray-900 text-gray-100' : ''}`}>
           <div 
             className={`fixed inset-0 bg-black opacity-50 z-10 md:hidden ${sidebarOpen ? 'block' : 'hidden'}`} 
             onClick={toggleSidebar}
