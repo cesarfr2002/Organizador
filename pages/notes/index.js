@@ -5,6 +5,7 @@ import Layout from '../../components/Layout';
 import NotesList from '../../components/NotesList';
 import Head from 'next/head';
 import { toast } from 'react-toastify';
+import { useGamification } from '../../context/GamificationContext';
 
 export default function Notes() {
   const { data: session, status } = useSession();
@@ -17,6 +18,9 @@ export default function Notes() {
     tag: '',
     search: ''
   });
+  
+  // Add gamification hooks
+  const { addPoints, unlockAchievement, gamificationEnabled } = useGamification();
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -27,8 +31,37 @@ export default function Notes() {
     if (status === 'authenticated') {
       fetchSubjects();
       fetchNotes();
+      
+      // Award points for visiting notes page
+      if (gamificationEnabled) {
+        addPoints(5, 'Revisar notas');
+      }
     }
   }, [status, filter]);
+
+  // Track notes count for achievements
+  useEffect(() => {
+    if (notes.length && gamificationEnabled) {
+      // Achievements for note milestones
+      if (notes.length >= 5) {
+        unlockAchievement({
+          id: 'notes-5',
+          name: 'Coleccionista Principiante',
+          description: 'Has creado tus primeras 5 notas',
+          icon: '📝'
+        });
+      }
+      
+      if (notes.length >= 20) {
+        unlockAchievement({
+          id: 'notes-20',
+          name: 'Erudito',
+          description: 'Has acumulado 20 notas. ¡Impresionante!',
+          icon: '🧠'
+        });
+      }
+    }
+  }, [notes.length]);
 
   const fetchSubjects = async () => {
     try {
@@ -74,6 +107,11 @@ export default function Notes() {
       ...prev,
       [name]: value
     }));
+    
+    // Award points for filtering/searching
+    if (gamificationEnabled) {
+      addPoints(2, 'Organizar notas');
+    }
   };
 
   const deleteNote = async (id) => {
@@ -117,7 +155,12 @@ export default function Notes() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Mis Notas</h1>
         <button
-          onClick={() => router.push('/notes/new')}
+          onClick={() => {
+            router.push('/notes/new');
+            if (gamificationEnabled) {
+              addPoints(10, 'Iniciativa de nueva nota');
+            }
+          }}
           className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center"
         >
           <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -179,7 +222,13 @@ export default function Notes() {
       </div>
 
       {/* Usar el componente NotesList que hace las notas clickeables */}
-      <NotesList notes={notes} deleteNote={deleteNote} />
+      <NotesList 
+        notes={notes} 
+        deleteNote={deleteNote} 
+        onNoteClick={gamificationEnabled ? 
+          () => addPoints(3, 'Leer una nota') : 
+          null}
+      />
     </Layout>
   );
 }
