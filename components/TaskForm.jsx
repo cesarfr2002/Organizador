@@ -23,6 +23,7 @@ export default function TaskForm({ task, subjects, isEditing = false }) {
     estimatedTime: 0,
     weight: 0,
     tags: [],
+    relatedNotes: [], // Nuevo campo para las notas relacionadas
     examDetails: {
       topics: [],
       duration: 60,
@@ -49,16 +50,37 @@ export default function TaskForm({ task, subjects, isEditing = false }) {
   });
   const [tagInput, setTagInput] = useState('');
   const [loading, setLoading] = useState(false);
+  // Nuevo estado para las notas disponibles
+  const [availableNotes, setAvailableNotes] = useState([]);
 
   useEffect(() => {
     if (task) {
       setFormData({
         ...formData,
         ...task,
-        dueDate: task.dueDate ? new Date(task.dueDate) : null
+        dueDate: task.dueDate ? new Date(task.dueDate) : null,
+        relatedNotes: task.relatedNotes || []
       });
     }
+
+    // Cargar las notas disponibles
+    fetchNotes();
   }, [task]);
+
+  // Función para cargar las notas
+  const fetchNotes = async () => {
+    try {
+      const res = await fetch('/api/notes');
+      if (res.ok) {
+        const data = await res.json();
+        setAvailableNotes(data);
+      } else {
+        console.error('Error fetching notes:', await res.text());
+      }
+    } catch (error) {
+      console.error('Error fetching notes:', error);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -140,6 +162,24 @@ export default function TaskForm({ task, subjects, isEditing = false }) {
     { value: 240, label: '4 horas' },
     { value: 300, label: '5 horas' },
   ];
+
+  // Función para manejar la selección/deselección de notas
+  const handleNoteToggle = (noteId) => {
+    setFormData(prev => {
+      const currentNotes = prev.relatedNotes || [];
+      if (currentNotes.includes(noteId)) {
+        return {
+          ...prev,
+          relatedNotes: currentNotes.filter(id => id !== noteId)
+        };
+      } else {
+        return {
+          ...prev,
+          relatedNotes: [...currentNotes, noteId]
+        };
+      }
+    });
+  };
 
   // Renderizar los campos específicos según el tipo de tarea
   const renderTypeSpecificFields = () => {
@@ -632,6 +672,42 @@ export default function TaskForm({ task, subjects, isEditing = false }) {
                     </button>
                   </span>
                 ))}
+              </div>
+            )}
+          </div>
+
+          {/* Sección de notas relacionadas */}
+          <div className="mb-6">
+            <h3 className="text-lg font-medium mb-2 dark:text-white">Notas relacionadas</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+              Selecciona las notas que estén relacionadas con esta tarea para acceder rápidamente al material de estudio.
+            </p>
+            
+            {availableNotes.length > 0 ? (
+              <div className="max-h-60 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-md p-2">
+                {availableNotes.map(note => (
+                  <div key={note._id} className="flex items-center py-1 border-b border-gray-100 dark:border-gray-700">
+                    <input
+                      type="checkbox"
+                      id={`note-${note._id}`}
+                      checked={formData.relatedNotes?.includes(note._id)}
+                      onChange={() => handleNoteToggle(note._id)}
+                      className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-700"
+                    />
+                    <label htmlFor={`note-${note._id}`} className="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                      {note.title}
+                      {note.subject && typeof note.subject === 'object' && (
+                        <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
+                          ({note.subject.name})
+                        </span>
+                      )}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-sm text-gray-500 dark:text-gray-400 italic">
+                No hay notas disponibles. <button type="button" onClick={() => router.push('/notes/new')} className="text-blue-600 hover:underline">Crear una nota</button>
               </div>
             )}
           </div>

@@ -149,6 +149,11 @@ const TaskSchema = new mongoose.Schema({
     default: 0
   },
   studySessions: [StudySessionSchema],
+  // Campo nuevo para vincular notas relacionadas
+  relatedNotes: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Note'
+  }],
   // Campos específicos según el tipo de tarea
   examDetails: ExamTaskSchema,
   projectDetails: ProjectTaskSchema,

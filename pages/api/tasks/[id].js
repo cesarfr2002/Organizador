@@ -15,7 +15,7 @@ export default async function handler(req, res) {
     await dbConnect();
     
     const { 
-      query: { id },
+      query: { id, populate },
       method
     } = req;
     
@@ -35,7 +35,22 @@ export default async function handler(req, res) {
       // Obtener una tarea específica
       case 'GET':
         try {
-          const task = await Task.findOne({ _id: id, userId }).populate('subject', 'name color');
+          let query = Task.findOne({ _id: id, userId }).populate('subject', 'name color');
+          
+          // Si se solicita poblar las notas relacionadas
+          if (populate === 'relatedNotes') {
+            query = query.populate({
+              path: 'relatedNotes',
+              select: 'title subject updatedAt',
+              populate: {
+                path: 'subject',
+                select: 'name color'
+              },
+              strictPopulate: false // Añadir esta opción para evitar el error mientras se actualiza el esquema
+            });
+          }
+          
+          const task = await query.exec();
           
           if (!task) {
             return res.status(404).json({ error: 'Tarea no encontrada' });

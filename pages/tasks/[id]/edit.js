@@ -33,7 +33,7 @@ export default function EditTask() {
 
   const fetchTask = async () => {
     try {
-      const res = await fetch(`/api/tasks/${id}`);
+      const res = await fetch(`/api/tasks/${id}?populate=relatedNotes`);
       if (res.ok) {
         const data = await res.json();
         setTask(data);

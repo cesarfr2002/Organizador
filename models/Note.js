@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const NoteSchema = new mongoose.Schema({
   title: { type: String, required: true },
@@ -21,7 +21,12 @@ const NoteSchema = new mongoose.Schema({
   // Indicador para notas importantes o favoritas
   isImportant: { type: Boolean, default: false },
   // Propietario de la nota
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  // Campo para vincular tareas relacionadas
+  relatedTasks: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Task'
+  }]
 }, {
   timestamps: true
 });
@@ -52,4 +57,4 @@ NoteSchema.index({ subject: 1 });
 NoteSchema.index({ userId: 1 });
 NoteSchema.index({ updatedAt: -1 });
 
-module.exports = mongoose.models.Note || mongoose.model('Note', NoteSchema);
+export default mongoose.models.Note || mongoose.model('Note', NoteSchema);

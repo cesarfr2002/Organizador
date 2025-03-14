@@ -12,7 +12,7 @@ export default async function handler(req, res) {
   await dbConnect();
   
   const { 
-    query: { id },
+    query: { id, populate },
     method
   } = req;
   
@@ -22,7 +22,21 @@ export default async function handler(req, res) {
     // Obtener una nota específica
     case 'GET':
       try {
-        const note = await Note.findOne({ _id: id, userId }).populate('subject', 'name color');
+        let query = Note.findOne({ _id: id, userId }).populate('subject', 'name color');
+        
+        // Si se solicita poblar tareas relacionadas
+        if (populate === 'relatedTasks') {
+          query = query.populate({
+            path: 'relatedTasks',
+            select: 'title completed dueDate priority',
+            populate: {
+              path: 'subject',
+              select: 'name color'
+            }
+          });
+        }
+        
+        const note = await query.exec();
         
         if (!note) {
           return res.status(404).json({ error: 'Nota no encontrada' });
@@ -30,6 +44,7 @@ export default async function handler(req, res) {
         
         res.status(200).json(note);
       } catch (error) {
+        console.error('Error retrieving note:', error);
         res.status(500).json({ error: error.message });
       }
       break;

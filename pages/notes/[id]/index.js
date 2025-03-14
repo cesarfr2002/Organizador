@@ -43,6 +43,7 @@ export default function NoteDetail() {
   const [loading, setLoading] = useState(true);
   const [contentStats, setContentStats] = useState({ words: 0, chars: 0, readingTime: 0 });
   const contentRef = useRef(null);
+  const [relatedTasks, setRelatedTasks] = useState([]);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -64,7 +65,7 @@ export default function NoteDetail() {
   const fetchNote = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/notes/${id}`);
+      const res = await fetch(`/api/notes/${id}?populate=relatedTasks`);
       
       if (!res.ok) {
         throw new Error('Error al obtener la nota');
@@ -72,6 +73,7 @@ export default function NoteDetail() {
       
       const data = await res.json();
       setNote(data);
+      setRelatedTasks(data.relatedTasks || []);
       calculateContentStats(data.content);
     } catch (error) {
       console.error('Error fetching note:', error);
@@ -313,6 +315,36 @@ export default function NoteDetail() {
                           className="text-sm text-blue-600 hover:text-blue-800 truncate block"
                         >
                           {relatedNote.title}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Tareas relacionadas */}
+              {relatedTasks.length > 0 && (
+                <div className="mb-4">
+                  <h4 className="text-sm font-medium text-gray-500 mb-1">Tareas relacionadas</h4>
+                  <ul className="divide-y divide-gray-100">
+                    {relatedTasks.map(task => (
+                      <li key={task._id} className="py-1.5">
+                        <Link 
+                          href={`/tasks/${task._id}/edit`}
+                          className="text-sm text-blue-600 hover:text-blue-800 flex items-center group hover:bg-blue-50 p-1 rounded-md transition-colors"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={task.completed}
+                            readOnly
+                            className="h-4 w-4 text-blue-600 border-gray-300 rounded mr-2"
+                          />
+                          <span className={task.completed ? 'line-through text-gray-500' : 'flex-grow'}>
+                            {task.title}
+                          </span>
+                          <span className="ml-auto opacity-0 group-hover:opacity-100 text-xs text-blue-600">
+                            Ir →
+                          </span>
                         </Link>
                       </li>
                     ))}
