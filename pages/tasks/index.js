@@ -438,12 +438,20 @@ export default function Tasks() {
           <button
             type="button"
             onClick={() => setViewMode('kanban')}
-            className={`px-4 py-2 text-sm font-medium rounded-r-lg border
+            className={`px-4 py-2 text-sm font-medium border
               ${viewMode === 'kanban' 
                 ? 'bg-blue-600 text-white border-blue-600' 
                 : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}
           >
             Kanban
+          </button>
+          <button
+            type="button"
+            onClick={() => router.push('/tasks/eisenhower')}
+            className={`px-4 py-2 text-sm font-medium rounded-r-lg border
+              bg-white text-gray-700 border-gray-300 hover:bg-gray-50`}
+          >
+            Eisenhower
           </button>
         </div>
       </div>

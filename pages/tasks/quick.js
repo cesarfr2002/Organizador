@@ -77,6 +77,17 @@ export default function QuickTasks() {
                 <strong>Consejo:</strong> Divide las tareas grandes en subtareas más pequeñas y específicas. 
                 Esto facilita el seguimiento del progreso y reduce la procrastinación.
               </p>
+              <p className="text-sm text-blue-800 mt-2">
+                <button 
+                  onClick={() => router.push('/tasks/eisenhower')}
+                  className="text-blue-600 hover:text-blue-800 font-medium flex items-center mt-1"
+                >
+                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                  </svg>
+                  Ver matriz de Eisenhower para priorizar tareas
+                </button>
+              </p>
             </div>
           </div>
         </div>
