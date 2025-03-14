@@ -11,9 +11,11 @@ export default function NoteEditor({ noteId }) {
     content: '',
     subject: '',
     tags: [],
-    images: []
+    images: [],
+    relatedTasks: [] // Añadimos campo para tareas relacionadas
   });
   const [subjects, setSubjects] = useState([]);
+  const [tasks, setTasks] = useState([]); // Lista de tareas disponibles
   const [loading, setLoading] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
   const [newTag, setNewTag] = useState('');
@@ -23,11 +25,18 @@ export default function NoteEditor({ noteId }) {
 
   useEffect(() => {
     fetchSubjects();
+    fetchTasks(); // Cargar tareas disponibles
     
     if (noteId) {
       fetchNote();
+    } else if (router.query.taskId) {
+      // Si se está creando una nota desde una tarea, pre-seleccionar la tarea
+      setNote(prevNote => ({
+        ...prevNote,
+        relatedTasks: [router.query.taskId]
+      }));
     }
-  }, [noteId]);
+  }, [noteId, router.query.taskId]);
 
   const fetchSubjects = async () => {
     try {
@@ -36,6 +45,19 @@ export default function NoteEditor({ noteId }) {
       setSubjects(data);
     } catch (error) {
       console.error('Error fetching subjects:', error);
+    }
+  };
+
+  const fetchTasks = async () => {
+    try {
+      // Obtenemos solo tareas pendientes para relacionar
+      const res = await fetch('/api/tasks?completed=false');
+      if (res.ok) {
+        const data = await res.json();
+        setTasks(data);
+      }
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
     }
   };
 
@@ -463,11 +485,81 @@ export default function NoteEditor({ noteId }) {
           </div>
         </div>
 
+        {/* Sección para seleccionar tareas relacionadas - añadir antes del botón de guardar */}
+        <div className="mt-4 mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Vincular con tareas
+          </label>
+          <div className="border rounded-md p-3 max-h-60 overflow-y-auto">
+            {tasks.length > 0 ? (
+              <div className="space-y-2">
+                {tasks.map(task => (
+                  <div key={task._id} className="flex items-start">
+                    <input
+                      type="checkbox"
+                      id={`task-${task._id}`}
+                      checked={note.relatedTasks?.includes(task._id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setNote({
+                            ...note, 
+                            relatedTasks: [...(note.relatedTasks || []), task._id]
+                          });
+                        } else {
+                          setNote({
+                            ...note, 
+                            relatedTasks: (note.relatedTasks || []).filter(id => id !== task._id)
+                          });
+                        }
+                      }}
+                      className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <label htmlFor={`task-${task._id}`} className="ml-2 block cursor-pointer">
+                      <div className={`font-medium ${task.completed ? 'line-through text-gray-500' : ''}`}>
+                        {task.title}
+                      </div>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {task.subject && (
+                          <span 
+                            className="px-2 py-0.5 text-xs rounded-full" 
+                            style={{ 
+                              backgroundColor: `${task.subject.color}20`,
+                              color: task.subject.color 
+                            }}
+                          >
+                            {task.subject.name}
+                          </span>
+                        )}
+                        {task.priority && (
+                          <span className={`px-2 py-0.5 text-xs rounded-full ${
+                            task.priority === 'Alta' ? 'bg-red-100 text-red-800' : 
+                            task.priority === 'Media' ? 'bg-yellow-100 text-yellow-800' : 
+                            'bg-green-100 text-green-800'
+                          }`}>
+                            {task.priority}
+                          </span>
+                        )}
+                        {task.dueDate && (
+                          <span className="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-800">
+                            {new Date(task.dueDate).toLocaleDateString('es-ES')}
+                          </span>
+                        )}
+                      </div>
+                    </label>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500 text-center py-2">No hay tareas disponibles para vincular</p>
+            )}
+          </div>
+        </div>
+
         <div className="mt-6">
           <button
             type="submit"
             disabled={loading}
-            className="w-full px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+            className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-600"
           >
             {loading ? 'Guardando...' : noteId ? 'Actualizar nota' : 'Guardar nota'}
           </button>

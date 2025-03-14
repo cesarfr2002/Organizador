@@ -21,7 +21,12 @@ const NoteSchema = new mongoose.Schema({
   // Indicador para notas importantes o favoritas
   isImportant: { type: Boolean, default: false },
   // Propietario de la nota
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  // Campo para tareas relacionadas
+  relatedTasks: [{ 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Task' 
+  }]
 }, {
   timestamps: true
 });

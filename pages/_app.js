@@ -1,6 +1,9 @@
 import { SessionProvider } from 'next-auth/react';
 import { ThemeProvider } from '../utils/ThemeContext';
 import { useEffect } from 'react';
+import 'tailwindcss/tailwind.css';
+import '@tailwindcss/typography'; // Asegúrate de que esto esté instalado y configurado
+import 'react-toastify/dist/ReactToastify.css';
 import '../styles/globals.css';
 import Head from 'next/head';
 

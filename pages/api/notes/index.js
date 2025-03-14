@@ -40,6 +40,11 @@ export default async function handler(req, res) {
           ];
         }
         
+        // Filtrar por tarea relacionada
+        if (req.query.taskId) {
+          query.relatedTasks = req.query.taskId;
+        }
+        
         // Ordenación
         let sort = {};
         const sortField = req.query.sort || 'updatedAt';
