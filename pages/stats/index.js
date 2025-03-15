@@ -5,6 +5,7 @@ import Head from 'next/head';
 import Layout from '../../components/Layout';
 import { toast } from 'react-toastify';
 import { Chart, registerables } from 'chart.js';
+import AcademicGanttChart from '../../components/AcademicGanttChart';
 
 // Registrar todos los controladores de Chart.js
 Chart.register(...registerables);
@@ -23,6 +24,8 @@ export default function Statistics() {
   });
   const [tasksBySubject, setTasksBySubject] = useState([]);
   const [tasksByPriority, setTasksByPriority] = useState([]);
+  const [tasks, setTasks] = useState([]);
+  const [showAllTasks, setShowAllTasks] = useState(false);
   
   // Referencias para los gráficos
   const completionChartRef = useRef(null);
@@ -66,6 +69,58 @@ export default function Statistics() {
       setStats(generalStats);
       setTasksBySubject(subjectsData);
       setTasksByPriority(priorityData);
+
+      // Obtener tareas para el diagrama Gantt
+      try {
+        const tasksRes = await fetch('/api/tasks');
+        if (tasksRes.ok) {
+          const tasksData = await tasksRes.json();
+          setTasks(tasksData);
+        } else {
+          console.error('Error fetching tasks for Gantt chart');
+        }
+      } catch (error) {
+        console.error('Error fetching tasks for Gantt chart:', error);
+        // Configuración de datos de muestra para el desarrollo
+        setTasks([
+          {
+            _id: '1',
+            title: 'Examen Final de Programación',
+            type: 'examen',
+            dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(), // 2 semanas después
+            priority: 'Alta',
+            subject: { name: 'Programación', color: '#4CAF50' },
+            completed: false
+          },
+          {
+            _id: '2',
+            title: 'Proyecto Base de Datos',
+            type: 'proyecto',
+            dueDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(), // 10 días después
+            priority: 'Alta',
+            subject: { name: 'Base de Datos', color: '#2196F3' },
+            completed: false
+          },
+          {
+            _id: '3',
+            title: 'Presentación Redes',
+            type: 'presentación',
+            dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 días después
+            priority: 'Media',
+            subject: { name: 'Redes', color: '#9C27B0' },
+            completed: false
+          },
+          {
+            _id: '4',
+            title: 'Ejercicios Matemáticas',
+            type: 'tarea',
+            dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 días después
+            priority: 'Baja',
+            subject: { name: 'Matemáticas', color: '#FF5722' },
+            completed: false
+          }
+        ]);
+      }
     } catch (error) {
       console.error('Error fetching stats:', error);
       toast.error('Error al cargar las estadísticas');
@@ -310,6 +365,36 @@ export default function Statistics() {
           <div className="h-64">
             <canvas id="priorityChart"></canvas>
           </div>
+        </div>
+      </div>
+
+      {/* Nueva sección de visualización Gantt */}
+      <div className="mt-8">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">Visualización Gantt de Proyectos Académicos</h2>
+          <label className="inline-flex items-center">
+            <input
+              type="checkbox"
+              checked={showAllTasks}
+              onChange={() => setShowAllTasks(!showAllTasks)}
+              className="form-checkbox h-5 w-5 text-blue-600"
+            />
+            <span className="ml-2 text-gray-700">Mostrar todas las tareas</span>
+          </label>
+        </div>
+        
+        <AcademicGanttChart tasks={tasks} showAllTasks={showAllTasks} />
+        
+        <div className="mt-4 bg-blue-50 p-4 rounded-lg text-sm text-blue-800">
+          <p className="flex items-start">
+            <svg className="w-5 h-5 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>
+              El diagrama Gantt muestra la programación y duración de proyectos y exámenes importantes.
+              Marca la casilla para incluir todas las tareas y ver posibles solapamientos en tu calendario académico.
+            </span>
+          </p>
         </div>
       </div>
     </Layout>

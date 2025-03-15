@@ -85,6 +85,11 @@ export default function Layout({ children }) {
 
   // Función para verificar la ruta activa
   const isActive = (path) => {
+    if (path === '/stats' && router.pathname === '/statistics') {
+      // This handles the special case where both routes should be considered the same
+      return `${theme === 'dark' ? 'bg-gray-700 text-white' : 'bg-gray-700 text-white'}`;
+    }
+    
     return router.pathname === path ? 
       `${theme === 'dark' ? 'bg-gray-700 text-white' : 'bg-gray-700 text-white'}` : 
       `${theme === 'dark' ? 'text-gray-300 hover:bg-gray-700 hover:text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'}`;
