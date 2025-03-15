@@ -307,6 +307,52 @@ export default function Tasks() {
     router.push(`/pomodoro?taskId=${taskId}`);
   };
 
+  const checkDeadlines = async () => {
+    try {
+      setLoading(true);
+      
+      // Usar el endpoint para tareas próximas (hoy + 3 días)
+      const res = await fetch('/api/notifications/force-today', { method: 'GET' });
+      const data = await res.json();
+      
+      if (data.count > 0) {
+        // Mostrar mensaje más detallado sobre las notificaciones generadas
+        const { summary } = data;
+        let message = "";
+        
+        if (summary) {
+          if (summary.today > 0) {
+            message += `${summary.today} para hoy`;
+          }
+          if (summary.tomorrow > 0) {
+            message += message ? `, ${summary.tomorrow} para mañana` : `${summary.tomorrow} para mañana`;
+          }
+          if (summary.future > 0) {
+            message += message ? `, ${summary.future} para días siguientes` : `${summary.future} para días siguientes`;
+          }
+        }
+        
+        toast.success(`Se generaron ${data.count} notificaciones${message ? `: ${message}` : ''}`);
+        
+        // Disparar evento para actualizar notificaciones en la UI
+        try {
+          const notificationUpdateEvent = new CustomEvent('notifications-updated');
+          window.dispatchEvent(notificationUpdateEvent);
+          console.log('Evento de actualización de notificaciones disparado');
+        } catch (err) {
+          console.error("Error al disparar evento de actualización:", err);
+        }
+      } else {
+        toast.info('No se encontraron tareas próximas que requieran notificación');
+      }
+    } catch (error) {
+      console.error('Error al verificar fechas límite:', error);
+      toast.error('Error al verificar fechas límite de tareas');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (status === 'loading' || loading) {
     return (
       <Layout>
@@ -343,6 +389,12 @@ export default function Tasks() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
             </svg>
             Nueva Tarea
+          </button>
+          <button 
+            onClick={checkDeadlines} 
+            className="text-sm text-blue-600 hover:text-blue-800"
+          >
+            Verificar fechas límite
           </button>
         </div>
       </div>

@@ -2,7 +2,9 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../auth/[...nextauth]';
 import dbConnect from '../../../lib/dbConnect';
 import Task from '../../../models/Task';
-import Note from '../../../models/Note'; // Importar modelo de notas
+import Note from '../../../models/Note';
+import Notification from '../../../models/notification';
+import { createTaskNotification } from '../../../utils/notificationService';
 
 export default async function handler(req, res) {
   try {
@@ -68,43 +70,44 @@ export default async function handler(req, res) {
     // POST: Crear una nueva tarea
     else if (req.method === 'POST') {
       try {
-        // Extraer datos del cuerpo de la solicitud
-        const { title, subject, dueDate, priority, description, type } = req.body;
+        console.log('Creando nueva tarea:', req.body);
         
-        // Log for debugging
-        console.log('Received task data:', req.body);
-        
-        // Validar datos requeridos
-        if (!title) {
-          return res.status(400).json({ message: 'El título es obligatorio' });
-        }
-        
-        // No need to convert priority - accept string values directly
-        // Validate the priority value is one of the acceptable enum values
-        if (!['Alta', 'Media', 'Baja'].includes(priority)) {
-          console.warn('Invalid priority value, defaulting to Media:', priority);
-        }
-        
-        // Crear la tarea con el ID de usuario de la sesión
-        const task = new Task({
-          title,
-          subject: subject || null,
-          dueDate: dueDate || null,
-          priority: priority || 'Media', // Use string value directly
-          description: description || '',
-          type: type || 'tarea',
-          completed: false,
-          userId: session.user.id 
+        // Crear la tarea
+        const task = await Task.create({
+          ...req.body,
+          userId: session.user.id
         });
         
-        // Guardar en la base de datos
-        await task.save();
+        console.log('Tarea creada con ID:', task._id);
         
-        // Responder con la tarea creada
+        // Crear notificación para la nueva tarea - Manejo de errores mejorado
+        try {
+          console.log('Intentando crear notificación para tarea:', task._id);
+          const notification = await createTaskNotification(session.user.id, task);
+          console.log('Notificación creada exitosamente:', notification);
+        } catch (notificationError) {
+          console.error('Error al crear notificación para tarea:', task._id, notificationError);
+          
+          // Intento de crear notificación manualmente como respaldo
+          try {
+            const backupNotification = await Notification.create({
+              userId: session.user.id,
+              title: 'Nueva tarea',
+              message: `Se ha creado una nueva tarea: ${task.title}`,
+              type: 'task',
+              relatedItemId: task._id,
+              relatedItemModel: 'Task',
+            });
+            console.log('Notificación de respaldo creada:', backupNotification);
+          } catch (backupError) {
+            console.error('Error en notificación de respaldo:', backupError);
+          }
+        }
+        
         return res.status(201).json(task);
       } catch (error) {
         console.error('Error creating task:', error);
-        return res.status(500).json({ message: 'Error al crear la tarea', details: error.message });
+        return res.status(400).json({ error: error.message });
       }
     } else {
       // Método no permitido

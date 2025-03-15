@@ -1,47 +1,53 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext } from 'react';
+import { useTheme as useNextTheme } from 'next-themes';
 
-const ThemeContext = createContext();
+// Crear un contexto con valores predeterminados
+const ThemeContext = createContext({
+  isDarkMode: false,
+  toggleDarkMode: () => {},
+});
 
-export function ThemeProvider({ children }) {
-  // Initialize theme from localStorage or default to 'light'
-  const [currentTheme, setCurrentTheme] = useState('light');
-
-  // Load theme from localStorage when component mounts
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) {
-      setCurrentTheme(savedTheme);
-      applyTheme(savedTheme);
-    }
-  }, []);
-
-  // Function to update theme
-  const updateTheme = (newTheme) => {
-    setCurrentTheme(newTheme);
-    localStorage.setItem('theme', newTheme);
-    applyTheme(newTheme);
-  };
-
-  // Apply theme to document
-  const applyTheme = (theme) => {
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  };
-
+// Este proveedor ya no es necesario ya que usamos el de next-themes
+// Lo mantenemos por compatibilidad con componentes existentes
+export const ThemeProvider = ({ children }) => {
+  const { theme, setTheme } = useNextTheme();
+  
+  // Convertir a formato esperado por componentes antiguos
+  const isDarkMode = theme === 'dark';
+  const toggleDarkMode = () => setTheme(isDarkMode ? 'light' : 'dark');
+  
   return (
-    <ThemeContext.Provider value={{ theme: currentTheme, setTheme: updateTheme }}>
+    <ThemeContext.Provider value={{ isDarkMode, toggleDarkMode }}>
       {children}
     </ThemeContext.Provider>
   );
-}
+};
 
+// Este hook ahora es un adaptador que utiliza next-themes internamente
 export function useTheme() {
-  const context = useContext(ThemeContext);
-  if (!context) {
-    throw new Error('useTheme must be used within a ThemeProvider');
+  // Para componentes que acceden directamente a useTheme de next-themes
+  if (typeof window !== 'undefined') {
+    try {
+      // Intentar obtener el contexto normal
+      const context = useContext(ThemeContext);
+      
+      // Si el contexto no está disponible, crear un adaptador sobre la marcha
+      if (!context || Object.keys(context).length === 0) {
+        const { theme, setTheme } = useNextTheme();
+        const isDarkMode = theme === 'dark';
+        const toggleDarkMode = () => setTheme(isDarkMode ? 'light' : 'dark');
+        
+        return { isDarkMode, toggleDarkMode };
+      }
+      
+      return context;
+    } catch (error) {
+      console.warn('ThemeContext fallback:', error);
+      // Devolver valores por defecto si todo falla
+      return { isDarkMode: false, toggleDarkMode: () => {} };
+    }
   }
-  return context;
+  
+  // Valores predeterminados para SSR
+  return { isDarkMode: false, toggleDarkMode: () => {} };
 }

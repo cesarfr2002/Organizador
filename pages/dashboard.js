@@ -8,6 +8,7 @@ import TaskList from '../components/TaskList';
 import PomodoroWidget from '../components/PomodoroWidget';
 import { format, isToday, isThisWeek, isPast } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { toast } from 'react-toastify';
 
 export default function Dashboard() {
   const { data: session, status } = useSession();
@@ -60,6 +61,56 @@ export default function Dashboard() {
       setLoading(false);
     }
   };
+
+  // Verificar notificaciones y saludar al usuario en el dashboard
+  useEffect(() => {
+    // Verificar notificaciones existentes y saludar basado en hora del día
+    const checkWelcome = () => {
+      const hour = new Date().getHours();
+      let greeting;
+      
+      if (hour < 12) greeting = "¡Buenos días!";
+      else if (hour < 18) greeting = "¡Buenas tardes!";
+      else greeting = "¡Buenas noches!";
+      
+      toast.success(`${greeting} Bienvenido a tu Dashboard`, {
+        position: "bottom-right",
+        autoClose: 5000,
+      });
+    };
+    
+    if (status === 'authenticated') {
+      checkWelcome();
+      
+      // También podemos verificar las tareas pendientes en el dashboard
+      const verifyTasks = async () => {
+        try {
+          const res = await fetch('/api/tasks/upcoming-summary');
+          const data = await res.json();
+          
+          if (data.todayCount > 0 || data.overdueCount > 0) {
+            toast.info(
+              <div>
+                <div className="font-bold">Resumen de tus tareas</div>
+                {data.todayCount > 0 && (
+                  <div className="text-sm">Tienes {data.todayCount} tarea(s) para hoy</div>
+                )}
+                {data.overdueCount > 0 && (
+                  <div className="text-sm">Tienes {data.overdueCount} tarea(s) atrasada(s)</div>
+                )}
+              </div>,
+              { delay: 2000, autoClose: 7000 }
+            );
+          }
+        } catch (err) {
+          console.error("Error al verificar tareas:", err);
+        }
+      };
+      
+      // Ejecutar verificación de tareas con un pequeño retraso
+      setTimeout(verifyTasks, 3000);
+    }
+  }, [status]);
 
   return (
     <Layout>

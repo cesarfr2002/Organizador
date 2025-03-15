@@ -154,7 +154,12 @@ const TaskSchema = new mongoose.Schema({
   projectDetails: ProjectTaskSchema,
   assignmentDetails: AssignmentTaskSchema,
   readingDetails: ReadingTaskSchema,
-  presentationDetails: PresentationTaskSchema
+  presentationDetails: PresentationTaskSchema,
+  // Añadir campo para controlar notificaciones enviadas
+  notificationSent: {
+    type: Boolean,
+    default: false,
+  }
 }, {
   timestamps: true
 });

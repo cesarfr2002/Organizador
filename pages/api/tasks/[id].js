@@ -90,6 +90,7 @@ export default async function handler(req, res) {
           // Si se está marcando como completada, agregar la fecha de completado
           if (req.body.completed === true) {
             req.body.completedAt = new Date();
+            req.body.notificationSent = true;
           }
           
           const task = await Task.findOneAndUpdate(

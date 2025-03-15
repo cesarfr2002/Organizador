@@ -1,8 +1,10 @@
 import { useGamification } from '../context/GamificationContext';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useTheme } from '../utils/ThemeContext';
+import { useTheme as useNextTheme } from 'next-themes';
 import { useState, useEffect } from 'react';
+import NotificationBell from './notifications/NotificationBell';
+import TaskNotificationChecker from './TaskNotificationChecker';
 
 // Add motivational quotes array
 const motivationalQuotes = [
@@ -16,15 +18,19 @@ const motivationalQuotes = [
   "Cada día es una nueva oportunidad para cambiar tu vida."
 ];
 
-export default function Layout({ children }) {
+export default function Layout({ children, hideNavbar = false, hideFooter = false }) {
   const { gamificationEnabled, points, level, streakDays, achievements, dailyChallenge, completeChallenge } = useGamification();
-  const { theme } = useTheme();
+  const { theme, setTheme } = useNextTheme();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [showQuote, setShowQuote] = useState(true);
   const [currentQuote, setCurrentQuote] = useState("");
   const [showPointsAnimation, setShowPointsAnimation] = useState(false);
   const [lastPoints, setLastPoints] = useState(points);
+  
+  // Convertir a formato esperado por el resto de la app
+  const isDarkMode = theme === 'dark';
+  const toggleDarkMode = () => setTheme(isDarkMode ? 'light' : 'dark');
   
   // Select random quote on mount and change periodically
   useEffect(() => {
@@ -145,6 +151,9 @@ export default function Layout({ children }) {
   
   return (
     <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-gray-100'}`}>
+      {/* Componente de verificación de notificaciones de tareas */}
+      <TaskNotificationChecker />
+      
       <header className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} shadow sticky top-0 z-10`}>
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-center py-3">
@@ -223,13 +232,9 @@ export default function Layout({ children }) {
               </nav>
             </div>
             <div className="flex items-center">
-              <Link href="/notifications" legacyBehavior>
-                <a className={`hidden sm:flex px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 mr-2 ${isActive('/notifications') ? 'text-blue-600 dark:text-blue-400' : ''}`}>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                  </svg>
-                </a>
-              </Link>
+              <div className="mr-2">
+                <NotificationBell />
+              </div>
               <Link href="/settings" legacyBehavior>
                 <a className={`hidden sm:flex px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 ${isActive('/settings') ? 'text-blue-600 dark:text-blue-400' : ''}`}>
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -331,6 +336,7 @@ export default function Layout({ children }) {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                     </svg>
                     Notificaciones
+                    {/* Mostrar contador si hay notificaciones no leídas */}
                   </span>
                 </a>
               </Link>
