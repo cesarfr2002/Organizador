@@ -1,122 +1,148 @@
-import { useEffect, useRef, useState } from 'react';
-import { useNotifications } from '../context/NotificationContext';
-import { useSession } from 'next-auth/react';
+import { useEffect, useState, useRef } from 'react';
 import { toast } from 'react-toastify';
+import { useRouter } from 'next/router';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 const TaskNotificationChecker = () => {
-  const checkInterval = useRef(null);
-  const initialCheckDone = useRef(false);
-  const lastNotificationCount = useRef(0);
-  const { data: session, status } = useSession();
-  const { fetchNotifications, unreadCount } = useNotifications();
-  const [lastCheckTime, setLastCheckTime] = useState(null);
+  const [tasks, setTasks] = useState([]);
+  const router = useRouter();
+  const lastCheckRef = useRef(0);
+  const CHECK_INTERVAL = 1000 * 60 * 30; // Check every 30 minutes instead of constantly
 
-  // Función para verificar tareas próximas a vencer
-  const checkUpcomingTasks = async () => {
-    if (status !== 'authenticated') return;
-    
-    try {
-      console.log('Verificando tareas próximas a vencer...', new Date().toISOString());
+  useEffect(() => {
+    // Load notified tasks from localStorage on mount
+    const loadNotifiedTasks = () => {
+      try {
+        const storedNotifiedTasks = localStorage.getItem('notifiedTasks');
+        return storedNotifiedTasks ? JSON.parse(storedNotifiedTasks) : {};
+      } catch (error) {
+        console.error('Error loading notified tasks from localStorage:', error);
+        return {};
+      }
+    };
+
+    const checkTasks = async () => {
+      // Check if enough time has passed since last check
+      const now = Date.now();
+      if (now - lastCheckRef.current < CHECK_INTERVAL && lastCheckRef.current !== 0) {
+        return; // Skip check if not enough time has passed
+      }
       
-      // Usar el endpoint para tareas próximas
-      const response = await fetch('/api/notifications/force-today', {
-        method: 'GET',
+      lastCheckRef.current = now;
+      
+      try {
+        const response = await fetch('/api/tasks');
+        if (!response.ok) throw new Error('Error fetching tasks');
+        
+        const data = await response.json();
+        setTasks(data);
+        
+        // Get previously notified tasks
+        const notifiedTasks = loadNotifiedTasks();
+        
+        // Current date
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        // Tomorrow date
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        // Filter tasks that are due today or tomorrow
+        const urgentTasks = data.filter(task => {
+          if (!task.dueDate || task.completed) return false;
+          
+          const dueDate = new Date(task.dueDate);
+          dueDate.setHours(0, 0, 0, 0);
+          
+          const isToday = dueDate.getTime() === today.getTime();
+          const isTomorrow = dueDate.getTime() === tomorrow.getTime();
+          
+          return isToday || isTomorrow;
+        });
+        
+        // Show notification for tasks that haven't been notified today
+        urgentTasks.forEach(task => {
+          const taskId = task._id;
+          const dueDate = new Date(task.dueDate);
+          dueDate.setHours(0, 0, 0, 0);
+          
+          const todayKey = format(today, 'yyyy-MM-dd');
+          const taskKey = `${taskId}_${todayKey}`;
+          
+          // Check if we've already notified for this task today
+          if (!notifiedTasks[taskKey]) {
+            const isToday = dueDate.getTime() === today.getTime();
+            const message = isToday
+              ? `La tarea "${task.title}" vence hoy.`
+              : `La tarea "${task.title}" vence mañana.`;
+              
+            toast.info(
+              <div>
+                <p className="font-medium">{message}</p>
+                <button 
+                  onClick={() => router.push(`/tasks/${taskId}`)}
+                  className="mt-2 px-4 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition"
+                >
+                  Ver detalles
+                </button>
+              </div>,
+              {
+                autoClose: 10000,
+              }
+            );
+            
+            // Mark this task as notified for today
+            notifiedTasks[taskKey] = true;
+          }
+        });
+        
+        // Save updated notified tasks
+        localStorage.setItem('notifiedTasks', JSON.stringify(notifiedTasks));
+        
+        // Clean up old notifications (older than 2 days)
+        cleanupOldNotifications(notifiedTasks);
+        
+      } catch (error) {
+        console.error('Error checking tasks for notifications:', error);
+      }
+    };
+    
+    // Clean up old notifications to prevent localStorage from growing too large
+    const cleanupOldNotifications = (notifiedTasks) => {
+      const twoDaysAgo = new Date();
+      twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+      
+      const updatedNotifications = {};
+      
+      Object.keys(notifiedTasks).forEach(key => {
+        const parts = key.split('_');
+        if (parts.length === 2) {
+          const dateStr = parts[1];
+          const notifDate = new Date(dateStr);
+          
+          if (notifDate >= twoDaysAgo) {
+            updatedNotifications[key] = notifiedTasks[key];
+          }
+        }
       });
       
-      if (!response.ok) {
-        throw new Error('Error al verificar tareas');
-      }
-      
-      const result = await response.json();
-      console.log('Resultado de verificación automática:', result);
-      
-      // Actualizar timestamp de la última verificación
-      setLastCheckTime(new Date().toISOString());
-      
-      if (result.count > 0) {
-        console.log(`Se generaron ${result.count} notificaciones por tareas próximas`);
-        
-        // Actualizar las notificaciones en el contexto
-        fetchNotifications();
-        
-        // Mostrar toast solo si se generaron nuevas notificaciones
-        // y no estamos en la verificación inicial silenciosa
-        if (initialCheckDone.current) {
-          // Personalizar el mensaje según las notificaciones
-          let message = '';
-          if (result.summary) {
-            const { today, tomorrow, future } = result.summary;
-            const parts = [];
-            
-            if (today > 0) parts.push(`${today} para hoy`);
-            if (tomorrow > 0) parts.push(`${tomorrow} para mañana`);
-            if (future > 0) parts.push(`${future} para próximos días`);
-            
-            message = parts.join(', ');
-          }
-          
-          toast.info(
-            <div>
-              <div className="font-bold">Tienes tareas próximas a vencer</div>
-              {message && <div className="text-sm mt-1">{message}</div>}
-              <div className="text-xs mt-2">Haz clic en la campana 🔔 para ver los detalles</div>
-            </div>, 
-            { autoClose: 6000 }
-          );
-        }
-      } else {
-        console.log('No se encontraron tareas próximas que requieran notificación');
-      }
-    } catch (error) {
-      console.error('Error checking upcoming tasks:', error);
-    }
-  };
+      localStorage.setItem('notifiedTasks', JSON.stringify(updatedNotifications));
+    };
 
-  // Verificar tareas cuando el componente se monta
-  useEffect(() => {
-    if (status === 'authenticated' && !initialCheckDone.current) {
-      // Retrasamos la primera verificación silenciosa para dar tiempo a que cargue todo
-      const initialTimer = setTimeout(() => {
-        checkUpcomingTasks();
-        initialCheckDone.current = true;
-      }, 5000);
-      
-      // Establecer un intervalo para verificar periódicamente
-      // Cada 30 minutos en producción, cada 3 minutos en desarrollo
-      const interval = process.env.NODE_ENV === 'development' ? 3 * 60 * 1000 : 30 * 60 * 1000;
-      checkInterval.current = setInterval(checkUpcomingTasks, interval);
-      
-      return () => {
-        clearTimeout(initialTimer);
-        if (checkInterval.current) {
-          clearInterval(checkInterval.current);
-        }
-      };
-    }
-  }, [status]);
-
-  // Detector de nuevas notificaciones (para mostrar toasts)
-  useEffect(() => {
-    if (unreadCount > lastNotificationCount.current && initialCheckDone.current) {
-      const newNotifications = unreadCount - lastNotificationCount.current;
-      
-      // Solo mostrar toast si aumentaron las notificaciones y no es la carga inicial
-      if (newNotifications > 0) {
-        toast.info(
-          <div>
-            <div className="font-bold">{newNotifications} nueva{newNotifications > 1 ? 's' : ''} notificación{newNotifications > 1 ? 'es' : ''}</div>
-            <div className="text-xs mt-2">Haz clic en la campana 🔔 para verla{newNotifications > 1 ? 's' : ''}</div>
-          </div>,
-          { autoClose: 5000 }
-        );
-      }
-    }
+    // Initial check when component mounts
+    checkTasks();
     
-    lastNotificationCount.current = unreadCount;
-  }, [unreadCount]);
+    // Set up periodic checking if needed
+    const interval = setInterval(checkTasks, CHECK_INTERVAL);
+    
+    return () => {
+      clearInterval(interval);
+    };
+  }, [router.pathname]); // Only re-run when pathname changes
 
-  // Este componente no renderiza nada visible
-  return null;
+  return null; // This component doesn't render anything
 };
 
 export default TaskNotificationChecker;
