@@ -20,6 +20,9 @@ export default function NoteEditor({ noteId }) {
   const [previewMode, setPreviewMode] = useState(false);
   const [newTag, setNewTag] = useState('');
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [wordCount, setWordCount] = useState(0);
+  const [charCount, setCharCount] = useState(0);
   const textAreaRef = useRef(null);
   const fileInputRef = useRef(null);
 
@@ -37,6 +40,18 @@ export default function NoteEditor({ noteId }) {
       }));
     }
   }, [noteId, router.query.taskId]);
+
+  useEffect(() => {
+    if (note.content) {
+      const words = note.content.trim().split(/\s+/).length;
+      const chars = note.content.length;
+      setWordCount(words);
+      setCharCount(chars);
+    } else {
+      setWordCount(0);
+      setCharCount(0);
+    }
+  }, [note.content]);
 
   const fetchSubjects = async () => {
     try {
@@ -210,6 +225,15 @@ export default function NoteEditor({ noteId }) {
       case 'quote':
         formattedText = `\n> ${selectedText || 'Cita'}\n`;
         break;
+      case 'table':
+        formattedText = `\n| Columna 1 | Columna 2 |\n| --------- | --------- |\n|           |           |\n`;
+        break;
+      case 'highlight':
+        formattedText = `==${selectedText || 'texto resaltado'}==`;
+        break;
+      case 'math':
+        formattedText = `\n$$\n${selectedText || 'E=mc^2'}\n$$\n`;
+        break;
       default:
         formattedText = selectedText;
     }
@@ -228,6 +252,31 @@ export default function NoteEditor({ noteId }) {
       textarea.selectionStart = startPos + formattedText.length;
       textarea.selectionEnd = startPos + formattedText.length;
     }, 0);
+  };
+
+  const applyTemplate = (template) => {
+    const templates = {
+      apuntes: `# Apuntes de Clase \n\n**Fecha:** ${new Date().toLocaleDateString()}\n**Asignatura:** ${
+        subjects.find(s => s._id === note.subject)?.name || '[Asignatura]'
+      }\n\n## Temas principales\n\n- \n- \n- \n\n## Conceptos clave\n\n- \n\n## Preguntas y dudas\n\n- \n\n## Tareas asignadas\n\n- [ ] \n\n## Bibliografía\n\n- `,
+      
+      resumen: `# Resumen: [Título]\n\n## Conceptos fundamentales\n\n## Definiciones importantes\n\n## Fórmulas y ecuaciones\n\n## Ideas principales\n\n## Ejemplos\n\n## Conclusiones\n\n`,
+      
+      tarea: `# Tarea: [Título]\n\n**Fecha de entrega:** [Fecha]\n**Asignatura:** ${
+        subjects.find(s => s._id === note.subject)?.name || '[Asignatura]'
+      }\n\n## Objetivos\n\n- \n\n## Desarrollo\n\n\n## Conclusiones\n\n## Referencias\n\n- `,
+      
+      examen: `# Preparación para examen\n\n**Fecha del examen:** [Fecha]\n**Asignatura:** ${
+        subjects.find(s => s._id === note.subject)?.name || '[Asignatura]'
+      }\n\n## Temas a estudiar\n\n- \n- \n- \n\n## Conceptos clave\n\n- \n\n## Ejercicios de práctica\n\n1. \n\n## Material de referencia\n\n- \n\n## Plan de estudio\n\n- [ ] Día 1: \n- [ ] Día 2: \n- [ ] Día 3: \n`
+    };
+    
+    setNote(prev => ({
+      ...prev,
+      content: templates[template]
+    }));
+    
+    setShowTemplates(false);
   };
 
   const saveNote = async (e) => {
@@ -265,6 +314,61 @@ export default function NoteEditor({ noteId }) {
   return (
     <div className="bg-white rounded-lg shadow-lg p-6">
       <form onSubmit={saveNote}>
+        {/* Botón para mostrar plantillas */}
+        <div className="flex justify-end mb-2">
+          <button
+            type="button"
+            onClick={() => setShowTemplates(!showTemplates)}
+            className="text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+            </svg>
+            {showTemplates ? 'Ocultar plantillas' : 'Usar plantilla'}
+          </button>
+        </div>
+        
+        {/* Panel de plantillas */}
+        {showTemplates && (
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+            <h3 className="text-sm font-medium mb-2 text-blue-800">Plantillas de notas</h3>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
+              <button
+                type="button"
+                onClick={() => applyTemplate('apuntes')}
+                className="p-2 bg-white border border-blue-200 rounded hover:bg-blue-100 text-left text-sm"
+              >
+                <div className="font-medium">Apuntes de clase</div>
+                <div className="text-xs text-gray-500">Estructura para tomar apuntes durante una clase</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => applyTemplate('resumen')}
+                className="p-2 bg-white border border-blue-200 rounded hover:bg-blue-100 text-left text-sm"
+              >
+                <div className="font-medium">Resumen de tema</div>
+                <div className="text-xs text-gray-500">Formato para resumir temas clave</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => applyTemplate('tarea')}
+                className="p-2 bg-white border border-blue-200 rounded hover:bg-blue-100 text-left text-sm"
+              >
+                <div className="font-medium">Tarea o proyecto</div>
+                <div className="text-xs text-gray-500">Estructura para desarrollar una tarea</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => applyTemplate('examen')}
+                className="p-2 bg-white border border-blue-200 rounded hover:bg-blue-100 text-left text-sm"
+              >
+                <div className="font-medium">Preparación para examen</div>
+                <div className="text-xs text-gray-500">Plan para estudiar para un examen</div>
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="mb-4">
           <input
             type="text"
@@ -312,7 +416,7 @@ export default function NoteEditor({ noteId }) {
 
         {/* Toolbar de formato */}
         {!previewMode && (
-          <div className="flex flex-wrap gap-1 mb-2 p-1 border-b">
+          <div className="flex flex-wrap gap-1 mb-2 p-1 border-b sticky top-0 bg-white z-10">
             <button 
               type="button" 
               onClick={() => insertFormat('bold')}
@@ -428,6 +532,34 @@ export default function NoteEditor({ noteId }) {
               onChange={handleFileChange} 
               className="hidden" 
             />
+            <button 
+              type="button" 
+              onClick={() => insertFormat('table')}
+              className="p-1 hover:bg-gray-100 rounded"
+              title="Insertar tabla"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+            </button>
+            <button 
+              type="button" 
+              onClick={() => insertFormat('highlight')}
+              className="p-1 hover:bg-gray-100 rounded"
+              title="Texto resaltado"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              </svg>
+            </button>
+            <button 
+              type="button" 
+              onClick={() => insertFormat('math')}
+              className="p-1 hover:bg-gray-100 rounded"
+              title="Ecuación matemática"
+            >
+              <span className="font-bold">∑</span>
+            </button>
           </div>
         )}
 
@@ -448,12 +580,27 @@ export default function NoteEditor({ noteId }) {
           />
         )}
 
+        {/* Contador de palabras */}
+        <div className="flex justify-end text-xs text-gray-500 mt-1 mb-4">
+          <span>{wordCount} palabras</span>
+          <span className="mx-2">|</span>
+          <span>{charCount} caracteres</span>
+          <span className="mx-2">|</span>
+          <span>{Math.max(1, Math.ceil(wordCount / 200))} min lectura</span>
+        </div>
+
         <div className="mt-4">
           <div className="flex gap-2 mb-2">
             <input
               type="text"
               value={newTag}
               onChange={(e) => setNewTag(e.target.value)}
+              onKeyDown={(e) => {
+                if ((e.key === 'Enter' || e.key === ',') && newTag.trim()) {
+                  e.preventDefault();
+                  addTag();
+                }
+              }}
               placeholder="Añadir etiqueta"
               className="px-3 py-2 border rounded-md flex-grow"
             />
@@ -465,6 +612,30 @@ export default function NoteEditor({ noteId }) {
               Añadir
             </button>
           </div>
+          
+          {/* Sugerencias de etiquetas */}
+          {newTag.trim().length > 1 && (
+            <div className="mb-2 flex flex-wrap gap-1">
+              {['estudio', 'importante', 'examen', 'duda', 'proyecto'].filter(tag => 
+                tag.includes(newTag.trim().toLowerCase()) && !note.tags.includes(tag)
+              ).map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => {
+                    setNote({
+                      ...note, 
+                      tags: [...note.tags, tag]
+                    });
+                    setNewTag('');
+                  }}
+                  className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm"
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+          )}
           
           <div className="flex flex-wrap gap-2">
             {note.tags && note.tags.map((tag, index) => (

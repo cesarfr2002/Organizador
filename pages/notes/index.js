@@ -20,7 +20,7 @@ export default function Notes() {
   });
   
   // Add gamification hooks
-  const { addPoints, unlockAchievement, gamificationEnabled } = useGamification();
+  const { addPoints, unlockAchievement, gamificationEnabled } = useGamification() || {};
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -33,7 +33,7 @@ export default function Notes() {
       fetchNotes();
       
       // Award points for visiting notes page
-      if (gamificationEnabled) {
+      if (gamificationEnabled && typeof addPoints === 'function') {
         addPoints(5, 'Revisar notas');
       }
     }
@@ -41,7 +41,7 @@ export default function Notes() {
 
   // Track notes count for achievements
   useEffect(() => {
-    if (notes.length && gamificationEnabled) {
+    if (notes.length && gamificationEnabled && typeof unlockAchievement === 'function') {
       // Achievements for note milestones
       if (notes.length >= 5) {
         unlockAchievement({
@@ -109,7 +109,7 @@ export default function Notes() {
     }));
     
     // Award points for filtering/searching
-    if (gamificationEnabled) {
+    if (gamificationEnabled && name !== 'search' && typeof addPoints === 'function') {
       addPoints(2, 'Organizar notas');
     }
   };
@@ -136,6 +136,48 @@ export default function Notes() {
     }
   };
 
+  const toggleFavorite = async (note) => {
+    try {
+      const updatedNote = { ...note, isImportant: !note.isImportant };
+      
+      const res = await fetch(`/api/notes/${note._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedNote)
+      });
+      
+      if (res.ok) {
+        setNotes(notes.map(n => n._id === note._id ? 
+          { ...n, isImportant: !n.isImportant } : n));
+          
+        if (!note.isImportant) {
+          setFavoriteNote(note._id);
+          setTimeout(() => setFavoriteNote(null), 1500);
+          
+          // Otorgar puntos por marcar una nota como importante
+          if (gamificationEnabled && typeof addPoints === 'function') {
+            addPoints(5, 'Nota importante destacada');
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error al marcar favorito:', error);
+    }
+  };
+
+  const toggleTag = (tag) => {
+    if (selectedTags.includes(tag)) {
+      setSelectedTags(selectedTags.filter(t => t !== tag));
+    } else {
+      setSelectedTags([...selectedTags, tag]);
+      if (gamificationEnabled && typeof addPoints === 'function') {
+        addPoints(1, 'Filtrar por etiqueta');
+      }
+    }
+  };
+
   if (status === 'loading' || loading) {
     return (
       <Layout>
@@ -157,7 +199,7 @@ export default function Notes() {
         <button
           onClick={() => {
             router.push('/notes/new');
-            if (gamificationEnabled) {
+            if (gamificationEnabled && typeof addPoints === 'function') {
               addPoints(10, 'Iniciativa de nueva nota');
             }
           }}
