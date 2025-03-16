@@ -187,3 +187,60 @@ a {
   border-color: theme('colors.gray.600');
   color: theme('colors.white');
 }
+
+/* Auto-scheduled events styling - enhance visibility */
+.auto-scheduled-event {
+  background-color: rgba(99, 102, 241, 0.2) !important; /* Indigo with transparency */
+  border-left: 3px solid #6366F1 !important;
+  position: relative;
+}
+
+.auto-scheduled-event::before {
+  content: '📚';
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  font-size: 10px;
+  opacity: 0.8;
+}
+
+.event-auto-badge {
+  background-color: #6366F1;
+  color: white;
+  font-size: 0.6rem;
+  padding: 1px 4px;
+  border-radius: 3px;
+  margin-right: 4px;
+  text-transform: uppercase;
+}
+
+/* Custom styling for react-big-calendar */
+.rbc-event {
+  border-radius: 3px !important;
+  padding: 2px 5px !important;
+}
+
+.rbc-day-slot .rbc-event {
+  border-radius: 3px !important;
+  padding: 2px 5px !important;
+}
+
+/* Fix for agenda view */
+.rbc-agenda-view table.rbc-agenda-table {
+  border: 1px solid #ddd;
+}
+
+.rbc-agenda-view table.rbc-agenda-table tbody > tr > td {
+  padding: 5px;
+  vertical-align: middle;
+}
+
+.rbc-agenda-view table.rbc-agenda-table .rbc-agenda-time-cell {
+  padding-left: 5px;
+  padding-right: 5px;
+  text-transform: lowercase;
+}
+
+.rbc-agenda-view table.rbc-agenda-table tbody > tr > td + td {
+  border-left: 1px solid #ddd;
+}

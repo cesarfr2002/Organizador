@@ -111,6 +111,9 @@ export default function Settings() {
               <Link href="/settings/profile" legacyBehavior>
                 <a className="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-200">Perfil</a>
               </Link>
+              <Link href="/auto-schedule" legacyBehavior>
+                <a className="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-200">Auto Programación</a>
+              </Link>
             </div>
           </div>
         </div>

@@ -32,6 +32,19 @@ const formatLocation = (location) => {
   return parts.join(', ');
 };
 
+// Add this helper function near the top of the file
+const formatTime = (timeString) => {
+  if (!timeString) return '';
+  
+  if (typeof timeString === 'string') {
+    return timeString;
+  }
+  
+  // If it's a Date object
+  const date = new Date(timeString);
+  return date.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit', hour12: false });
+};
+
 export default function CalendarView() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -81,13 +94,68 @@ export default function CalendarView() {
     }
   }, [selectedDay, events, tasks]);
 
+  // Fetch events with proper date range parameters
   const fetchEvents = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/calendar/events');
+      // Add start/end date parameters to get a wider range of events
+      const today = new Date();
+      const startDate = new Date(today);
+      startDate.setMonth(startDate.getMonth() - 1);
+      const endDate = new Date(today);
+      endDate.setMonth(endDate.getMonth() + 3);
+      
+      const params = new URLSearchParams({
+        start: startDate.toISOString(),
+        end: endDate.toISOString()
+      });
+      
+      const res = await fetch(`/api/calendar/events?${params.toString()}`);
       if (res.ok) {
         const data = await res.json();
-        setEvents(data);
+        
+        // Process events to be compatible with react-big-calendar
+        const formattedEvents = data.map(event => {
+          let start, end;
+          
+          // Convert date strings to Date objects
+          if (event.date) {
+            const dateObj = new Date(event.date);
+            
+            // If we have startTime and endTime as strings (HH:MM)
+            if (typeof event.startTime === 'string' && typeof event.endTime === 'string') {
+              const [startHours, startMinutes] = event.startTime.split(':').map(Number);
+              const [endHours, endMinutes] = event.endTime.split(':').map(Number);
+              
+              start = new Date(dateObj);
+              start.setHours(startHours, startMinutes, 0);
+              
+              end = new Date(dateObj);
+              end.setHours(endHours, endMinutes, 0);
+            } else {
+              // If direct startTime/endTime are provided as dates or are missing
+              start = event.startTime ? new Date(event.startTime) : dateObj;
+              end = event.endTime ? new Date(event.endTime) : new Date(dateObj.getTime() + 60 * 60 * 1000); // Default 1 hour
+            }
+          } else if (event.startTime && event.endTime) {
+            // If we have direct startTime/endTime dates
+            start = new Date(event.startTime);
+            end = new Date(event.endTime);
+          } else {
+            // Fallback
+            start = new Date();
+            end = new Date(start.getTime() + 60 * 60 * 1000); // Default 1 hour
+          }
+          
+          return {
+            ...event,
+            start,
+            end,
+            allDay: false,
+          };
+        });
+        
+        setEvents(formattedEvents);
       } else {
         throw new Error('Error al cargar eventos');
       }
@@ -219,17 +287,44 @@ export default function CalendarView() {
   };
 
   // Componente para renderizar evento en el calendario (donde posiblemente esté el error)
-  const EventComponent = ({ event }) => (
-    <div title={`${event.title} - ${formatLocation(event.location)}`} className="overflow-hidden">
-      <p className="text-sm font-medium truncate">{event.title}</p>
-      {event.location && (
-        <p className="text-xs truncate">
-          {/* Usar formatLocation en lugar del objeto directo */}
-          {formatLocation(event.location)}
-        </p>
-      )}
-    </div>
-  );
+  const EventComponent = ({ event }) => {
+    const isAutoScheduled = event.isAutoScheduled;
+    
+    return (
+      <div 
+        className={`h-full ${isAutoScheduled ? 'auto-scheduled-event' : ''}`}
+        style={{
+          backgroundColor: event.color || '#3788d8',
+          borderLeft: isAutoScheduled ? '3px solid #6366F1' : 'none',
+          color: '#fff',
+          padding: '2px 4px',
+          borderRadius: '2px',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis'
+        }}
+      >
+        {isAutoScheduled && (
+          <span style={{ 
+            backgroundColor: '#6366F1', 
+            color: 'white', 
+            fontSize: '0.6rem', 
+            padding: '0px 3px', 
+            borderRadius: '3px',
+            marginRight: '2px',
+            display: 'inline-block'
+          }}>
+            Auto
+          </span>
+        )}
+        <span className="font-semibold">{event.title}</span>
+        {event.location && (
+          <div className="text-xs truncate text-white opacity-90">
+            {formatLocation(event.location)}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   // Componente para la información detallada al hacer clic en un evento
   const EventDetails = ({ event }) => (
@@ -260,6 +355,28 @@ export default function CalendarView() {
       // se puede agregar una propiedad locationText
       locationText: formatLocation(event.location)
     }));
+  };
+
+  const renderEvent = (event) => {
+    const isAutoScheduled = event.isAutoScheduled;
+    
+    return (
+      <div 
+        className={`calendar-event ${isAutoScheduled ? 'auto-scheduled-event' : ''}`}
+        style={{
+          backgroundColor: event.color || '#3788d8',
+          borderLeft: isAutoScheduled ? '3px solid #6366F1' : 'none',
+        }}
+      >
+        <div className="event-title">
+          {isAutoScheduled && <span className="event-auto-badge">Auto</span>}
+          {event.title}
+        </div>
+        <div className="event-time">
+          {formatTime(event.startTime)} - {formatTime(event.endTime)}
+        </div>
+      </div>
+    );
   };
 
   if (status === 'loading' || loading) {
@@ -369,18 +486,59 @@ export default function CalendarView() {
           <div className="bg-white rounded-lg shadow p-4">
             <BigCalendar
               localizer={localizer}
-              events={processEvents(events)}
+              events={events}  // We're now using the processed events directly
               startAccessor="start"
               endAccessor="end"
               style={{ height: 500 }}
+              views={{
+                month: true,
+                week: true,
+                day: true,
+                agenda: true
+              }}
+              view={viewMode}
+              onView={setViewMode}
+              date={displayedMonth}
+              onNavigate={date => setDisplayedMonth(date)}
               messages={{
-                // ...existing code...
+                today: 'Hoy',
+                previous: 'Anterior',
+                next: 'Siguiente',
+                month: 'Mes',
+                week: 'Semana',
+                day: 'Día',
+                agenda: 'Agenda',
+                allDay: 'Todo el día',
+                date: 'Fecha',
+                time: 'Hora',
+                event: 'Evento',
+                noEventsInRange: 'No hay eventos en este periodo'
               }}
               components={{
-                event: EventComponent, // Usar el componente personalizado para evitar renderizado directo
-                // ...existing code...
+                event: EventComponent
               }}
-              // ...existing code...
+              eventPropGetter={event => {
+                const backgroundColor = event.color || '#3788d8';
+                return {
+                  style: {
+                    backgroundColor,
+                    borderLeft: event.isAutoScheduled ? '3px solid #6366F1' : 'none'
+                  }
+                };
+              }}
+              onSelectEvent={event => {
+                // Handle event selection
+                console.log('Selected event:', event);
+                // Optionally navigate to task detail if it's an auto-scheduled task
+                if (event.taskId) {
+                  router.push(`/tasks/${event.taskId}`);
+                }
+              }}
+              onSelectSlot={({ start }) => {
+                // Handle slot selection
+                setSelectedDay(start);
+              }}
+              selectable
             />
             {/* Leyenda */}
             <div className="mt-4 flex items-center justify-center space-x-6 text-sm text-gray-500">

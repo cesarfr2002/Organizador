@@ -159,6 +159,10 @@ const TaskSchema = new mongoose.Schema({
   notificationSent: {
     type: Boolean,
     default: false,
+  },
+  autoScheduled: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true
