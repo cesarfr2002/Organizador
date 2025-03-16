@@ -58,7 +58,11 @@ const ResourceSchema = new mongoose.Schema({
   lastAccessed: {
     type: Date,
     default: null
-  }
+  },
+  relatedTasks: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Task'
+  }]
 }, { timestamps: true });
 
 export default mongoose.models.Resource || mongoose.model('Resource', ResourceSchema);

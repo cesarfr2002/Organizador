@@ -6,6 +6,7 @@ import { es } from 'date-fns/locale';
 import { toast } from 'react-toastify';
 import Layout from '../../components/Layout';
 import TaskNotes from '../../components/TaskNotes';
+import TaskResources from '../../components/TaskResources';
 import Link from 'next/link';
 import Head from 'next/head';
 
@@ -197,6 +198,9 @@ export default function TaskDetail() {
         <div className="space-y-6">
           {/* Componente de notas vinculadas */}
           <TaskNotes taskId={id} />
+          
+          {/* Recursos vinculados - Nuevo componente */}
+          <TaskResources taskId={id} />
           
           {/* Detalles adicionales */}
           <div className="bg-white rounded-lg shadow p-6">

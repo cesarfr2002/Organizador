@@ -21,6 +21,8 @@ export default function ResourceForm({ subjectId, resource = null, onSuccess, on
   const [uploadProgress, setUploadProgress] = useState(0);
   const [fileInfo, setFileInfo] = useState(null);
   const fileInputRef = useRef(null);
+  const [availableTasks, setAvailableTasks] = useState([]);
+  const [selectedTasks, setSelectedTasks] = useState([]);
   
   // Si estamos editando, cargar los datos del recurso
   useEffect(() => {
@@ -37,12 +39,44 @@ export default function ResourceForm({ subjectId, resource = null, onSuccess, on
         fileName: resource.fileName || ''
       });
       
+      // Cargar las tareas relacionadas si el recurso ya existe
+      if (resource.relatedTasks && resource.relatedTasks.length > 0) {
+        setSelectedTasks(resource.relatedTasks);
+      }
+      
       // Determinar si es un enlace o un archivo
       if (resource.fileUrl) {
         setUploadMode('file');
       }
     }
+    
+    // Cargar las tareas disponibles
+    fetchAvailableTasks();
   }, [resource]);
+  
+  // Función para cargar las tareas disponibles
+  const fetchAvailableTasks = async () => {
+    try {
+      const res = await fetch('/api/tasks?completed=false');
+      if (res.ok) {
+        const data = await res.json();
+        setAvailableTasks(data);
+      }
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+    }
+  };
+  
+  // Función para manejar la selección/deselección de tareas
+  const handleTaskSelection = (taskId) => {
+    setSelectedTasks(prev => {
+      if (prev.includes(taskId)) {
+        return prev.filter(id => id !== taskId);
+      } else {
+        return [...prev, taskId];
+      }
+    });
+  };
   
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -236,7 +270,25 @@ export default function ResourceForm({ subjectId, resource = null, onSuccess, on
         throw new Error(data.error || 'Error al guardar el recurso');
       }
       
+      const result = await res.json();
       toast.success(resource ? 'Recurso actualizado correctamente' : 'Recurso creado correctamente');
+      
+      // Si se guardó correctamente el recurso, actualizar las tareas relacionadas
+      if (result && result._id) {
+        try {
+          await fetch(`/api/resources/${result._id}/tasks`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              taskIds: selectedTasks
+            })
+          });
+        } catch (error) {
+          console.error('Error updating related tasks:', error);
+        }
+      }
       
       if (onSuccess) {
         onSuccess();
@@ -547,6 +599,48 @@ export default function ResourceForm({ subjectId, resource = null, onSuccess, on
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Selector de tareas relacionadas - nueva sección */}
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Tareas relacionadas
+            </label>
+            <div className="border rounded-md p-3 max-h-60 overflow-y-auto">
+              {availableTasks.length > 0 ? (
+                <div className="space-y-2">
+                  {availableTasks.map(task => (
+                    <div key={task._id} className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id={`task-${task._id}`}
+                        checked={selectedTasks.includes(task._id)}
+                        onChange={() => handleTaskSelection(task._id)}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <label htmlFor={`task-${task._id}`} className="ml-2 block cursor-pointer">
+                        <div className="font-medium">{task.title}</div>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {task.subject && (
+                            <span 
+                              className="px-2 py-0.5 text-xs rounded-full" 
+                              style={{ 
+                                backgroundColor: `${task.subject.color}20`,
+                                color: task.subject.color 
+                              }}
+                            >
+                              {task.subject.name}
+                            </span>
+                          )}
+                        </div>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-center py-4 text-gray-500">No hay tareas disponibles</p>
+              )}
+            </div>
           </div>
         </div>
         
