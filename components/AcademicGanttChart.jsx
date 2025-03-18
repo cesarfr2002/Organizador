@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { format, differenceInDays, addDays, parseISO, isBefore } from 'date-fns';
+import { format, differenceInDays, addDays, addWeeks, startOfWeek, endOfWeek, startOfDay, isSameDay, isBefore, isAfter } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 export default function AcademicGanttChart({ tasks = [], showAllTasks = false }) {
-  const [timeRange, setTimeRange] = useState({ start: null, end: null });
+  const [visibleWeeks, setVisibleWeeks] = useState([]);
   const [itemsToShow, setItemsToShow] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [todayPosition, setTodayPosition] = useState(50); // Default centered
 
   // Procesar las tareas y preparar los datos para visualización Gantt
   useEffect(() => {
@@ -27,50 +28,14 @@ export default function AcademicGanttChart({ tasks = [], showAllTasks = false })
       );
     }
     
-    // Si hay elementos para mostrar, calculamos el rango de fechas
-    if (filteredTasks.length > 0) {
-      // Encontrar la fecha más temprana y más tardía
-      const dates = filteredTasks.map(task => new Date(task.dueDate));
-      const earliestDate = new Date(Math.min(...dates));
-      const latestDate = new Date(Math.max(...dates));
-      
-      // Añadir margen de 7 días antes y después
-      const startDate = addDays(earliestDate, -7);
-      const endDate = addDays(latestDate, 7);
-      
-      setTimeRange({ start: startDate, end: endDate });
-    } else {
-      // Si no hay elementos, usar fechas predeterminadas (hoy y +30 días)
-      const today = new Date();
-      setTimeRange({
-        start: today,
-        end: addDays(today, 30)
-      });
-    }
-    
-    // Procesar los elementos para el formato Gantt
+    // Preparar las tareas con fechas normalizadas
     const processedItems = filteredTasks.map(task => {
-      const dueDate = new Date(task.dueDate);
-      // Estimar fecha de inicio según tipo de tarea o prioridad
-      let startDate;
-      
-      if (task.type === 'examen') {
-        startDate = addDays(dueDate, -7); // Una semana de estudio para exámenes
-      } else if (task.type === 'proyecto' || task.type === 'trabajo') {
-        startDate = addDays(dueDate, -14); // Dos semanas para proyectos
-      } else if (task.priority === 'Alta') {
-        startDate = addDays(dueDate, -5); // 5 días para tareas de alta prioridad
-      } else if (task.priority === 'Media') {
-        startDate = addDays(dueDate, -3); // 3 días para tareas de prioridad media
-      } else {
-        startDate = addDays(dueDate, -2); // 2 días para otras tareas
-      }
+      const dueDate = startOfDay(new Date(task.dueDate));
       
       return {
         id: task._id,
         name: task.title,
-        startDate: startDate,
-        endDate: dueDate,
+        dueDate,
         color: task.subject?.color || '#3182CE',
         type: task.type || 'Tarea',
         subject: task.subject?.name || '',
@@ -79,62 +44,101 @@ export default function AcademicGanttChart({ tasks = [], showAllTasks = false })
       };
     });
     
+    // Si no hay tareas, mostrar solo las próximas 4 semanas
+    if (processedItems.length === 0) {
+      const today = startOfDay(new Date());
+      const startWeek = startOfWeek(today, { weekStartsOn: 1 });
+      const weeks = Array(4).fill().map((_, i) => {
+        const weekStart = addWeeks(startWeek, i);
+        const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
+        return { start: weekStart, end: weekEnd };
+      });
+      
+      setVisibleWeeks(weeks);
+      setItemsToShow([]);
+      setLoading(false);
+      return;
+    }
+    
+    // Encontrar el rango de fechas a mostrar
+    const today = startOfDay(new Date());
+    
+    // Ordenar tareas por fecha de vencimiento
+    processedItems.sort((a, b) => a.dueDate - b.dueDate);
+    
+    // Encontrar la fecha de vencimiento más temprana y más tardía
+    const earliestDue = processedItems[0].dueDate;
+    const latestDue = processedItems[processedItems.length - 1].dueDate;
+    
+    // Asegurarnos de incluir al menos 1 semana antes de la primera tarea y 1 después de la última
+    const startDate = startOfWeek(
+      isBefore(earliestDue, today) ? earliestDue : today, 
+      { weekStartsOn: 1 }
+    );
+    const endDate = endOfWeek(
+      isAfter(latestDue, addWeeks(today, 3)) ? latestDue : addWeeks(today, 3),
+      { weekStartsOn: 1 }
+    );
+    
+    // Calcular cuántas semanas mostrar
+    const totalDays = differenceInDays(endDate, startDate);
+    const numWeeks = Math.ceil(totalDays / 7);
+    
+    // Generar array de semanas
+    const weeks = Array(numWeeks).fill().map((_, i) => {
+      const weekStart = addWeeks(startDate, i);
+      const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
+      return { start: weekStart, end: weekEnd };
+    });
+    
+    // Calcular posición relativa de "hoy"
+    const todayOffset = differenceInDays(today, startDate);
+    const todayPercent = (todayOffset / totalDays) * 100;
+    setTodayPosition(Math.max(0, Math.min(100, todayPercent)));
+    
+    setVisibleWeeks(weeks);
     setItemsToShow(processedItems);
     setLoading(false);
   }, [tasks, showAllTasks]);
 
-  // Calcular la duración total en días para el diagrama
-  const getTotalDays = () => {
-    if (!timeRange.start || !timeRange.end) return 30;
-    return Math.max(30, differenceInDays(timeRange.end, timeRange.start) + 1);
+  // Obtener color para tipo de tarea o prioridad
+  const getTaskColor = (item) => {
+    // Por tipo de tarea
+    if (item.type === 'examen') return '#E53E3E'; // Rojo para exámenes
+    if (item.type === 'proyecto') return '#805AD5'; // Morado para proyectos
+    
+    // Por prioridad
+    switch (item.priority) {
+      case 'Alta': return '#E53E3E'; // Rojo
+      case 'Media': return '#ED8936'; // Naranja
+      case 'Baja': return '#38A169'; // Verde
+      default: return '#3182CE'; // Azul por defecto
+    }
   };
 
-  // Determinar la posición y ancho de una barra en el diagrama
-  const getBarPosition = (item) => {
-    const totalDays = getTotalDays();
-    const startDiff = differenceInDays(item.startDate, timeRange.start);
-    const duration = differenceInDays(item.endDate, item.startDate) + 1;
+  // Determinar en qué semana cae una tarea
+  const getTaskWeekPosition = (task) => {
+    // Si la tarea está fuera del rango visible
+    if (visibleWeeks.length === 0) return null;
     
-    const leftPosition = (startDiff / totalDays) * 100;
-    const widthPercentage = (duration / totalDays) * 100;
+    const taskDate = task.dueDate;
     
-    return {
-      left: `${Math.max(0, leftPosition)}%`,
-      width: `${Math.min(100 - leftPosition, widthPercentage)}%`
-    };
-  };
-
-  // Generar los markers de fechas para el eje X
-  const generateDateMarkers = () => {
-    if (!timeRange.start || !timeRange.end) return [];
-    
-    const totalDays = getTotalDays();
-    const markers = [];
-    const markerCount = Math.min(12, Math.floor(totalDays / 5)); // Máximo 12 markers
-    
-    for (let i = 0; i <= markerCount; i++) {
-      const position = (i / markerCount) * 100;
-      const days = Math.floor((i / markerCount) * totalDays);
-      const date = addDays(timeRange.start, days);
-      
-      markers.push({
-        position: `${position}%`,
-        date,
-        label: format(date, 'dd MMM', { locale: es })
-      });
+    // Encontrar en qué semana cae la fecha de vencimiento
+    for (let i = 0; i < visibleWeeks.length; i++) {
+      if (taskDate >= visibleWeeks[i].start && taskDate <= visibleWeeks[i].end) {
+        // Determinar en qué día de la semana cae (0-6)
+        const weekStart = visibleWeeks[i].start;
+        const dayOffset = differenceInDays(taskDate, weekStart);
+        
+        return {
+          weekIndex: i,
+          dayOffset: dayOffset,
+          isToday: isSameDay(taskDate, new Date())
+        };
+      }
     }
     
-    return markers;
-  };
-
-  // Obtener color para prioridad
-  const getPriorityColor = (priority) => {
-    switch (priority) {
-      case 'Alta': return '#E53E3E';
-      case 'Media': return '#ED8936';
-      case 'Baja': return '#38A169';
-      default: return '#3182CE';
-    }
+    return null;
   };
 
   if (loading) {
@@ -146,8 +150,14 @@ export default function AcademicGanttChart({ tasks = [], showAllTasks = false })
     );
   }
 
-  const dateMarkers = generateDateMarkers();
-  const today = new Date();
+  // Día de la semana en español
+  const getDayName = (dayIndex) => {
+    const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+    return days[dayIndex];
+  };
+
+  // Día actual
+  const today = startOfDay(new Date());
 
   return (
     <div className="bg-white p-4 rounded-lg shadow-md">
@@ -159,68 +169,87 @@ export default function AcademicGanttChart({ tasks = [], showAllTasks = false })
         </div>
       ) : (
         <div className="relative">
-          {/* Líneas de guía para fechas */}
-          <div className="border-b border-gray-300 mb-2 relative h-6">
-            {dateMarkers.map((marker, idx) => (
-              <div key={idx} className="absolute text-xs text-gray-600" style={{ left: marker.position, transform: 'translateX(-50%)' }}>
-                {marker.label}
-                <div className="h-2 w-px bg-gray-300 mx-auto mt-1"></div>
-              </div>
-            ))}
+          {/* Línea de tiempo actual (HOY) */}
+          <div 
+            className="absolute top-0 bottom-0 border-l-2 border-red-500 z-10"
+            style={{ left: `${todayPosition}%` }}
+          >
+            <div className="w-3 h-3 rounded-full bg-red-500 -ml-1.5"></div>
+            <div className="absolute -top-6 -ml-7 text-xs text-red-600 font-bold bg-white px-1">HOY</div>
           </div>
           
-          {/* Línea de tiempo actual */}
-          {isBefore(timeRange.start, today) && isBefore(today, timeRange.end) && (
-            <div 
-              className="absolute top-6 bottom-0 border-l-2 border-red-500 z-10"
-              style={{ 
-                left: `${(differenceInDays(today, timeRange.start) / getTotalDays()) * 100}%`,
-              }}
-            >
-              <div className="w-2 h-2 rounded-full bg-red-500 -ml-1"></div>
-            </div>
-          )}
-          
-          {/* Tareas y proyectos */}
-          <div className="space-y-3 mt-4">
-            {itemsToShow.map((item) => {
-              const barStyle = getBarPosition(item);
-              const isOverdue = isBefore(item.endDate, today) && (!item.completed);
-              
-              return (
-                <div key={item.id} className="relative h-10">
-                  <div className="absolute left-0 top-0 h-full flex items-center w-1/4 pr-4 text-sm">
-                    <span className="truncate font-medium">{item.name}</span>
-                  </div>
-                  
-                  <div className="absolute left-1/4 right-0 h-full bg-gray-100 rounded">
-                    {/* Barra del proyecto/tarea */}
-                    <div 
-                      className="absolute top-0 h-full rounded flex items-center px-2 text-xs text-white"
-                      style={{
-                        ...barStyle,
-                        backgroundColor: item.type === 'examen' ? '#E53E3E' : 
-                                         item.type === 'proyecto' ? '#805AD5' : 
-                                         getPriorityColor(item.priority),
-                        opacity: isOverdue ? 0.7 : 1
-                      }}
-                      title={`${item.name} (${format(item.startDate, 'dd/MM')} - ${format(item.endDate, 'dd/MM')})`}
-                    >
-                      <div className="truncate">
-                        {getTotalDays() < 60 && item.type}
-                        {isOverdue && ' ⚠️'}
-                      </div>
-                    </div>
+          {/* Cabecera con fechas de semanas */}
+          <div className="border-b border-gray-200 mb-4">
+            <div className="flex">
+              {visibleWeeks.map((week, idx) => (
+                <div key={idx} className="flex-1 px-1 text-center">
+                  <div className="text-xs font-medium text-gray-500">
+                    {format(week.start, "dd MMM", { locale: es })} - {format(week.end, "dd MMM", { locale: es })}
                   </div>
                 </div>
-              );
-            })}
+              ))}
+            </div>
+          </div>
+
+          {/* Rejilla para las semanas */}
+          <div className="grid grid-cols-1 gap-2">
+            {/* Cabecera para días de la semana */}
+            <div className="grid grid-cols-7 gap-1 mb-1">
+              {Array(7).fill().map((_, day) => (
+                <div key={day} className="text-center text-xs font-medium text-gray-500">
+                  {getDayName(day)}
+                </div>
+              ))}
+            </div>
+            
+            {/* Semanas */}
+            <div className="grid grid-cols-1 gap-4">
+              {visibleWeeks.map((week, weekIdx) => (
+                <div key={weekIdx} className="grid grid-cols-7 gap-1 h-20">
+                  {/* Días de la semana */}
+                  {Array(7).fill().map((_, day) => {
+                    const currentDate = addDays(week.start, day);
+                    const isCurrentDate = isSameDay(currentDate, today);
+                    
+                    return (
+                      <div 
+                        key={day} 
+                        className={`border rounded-md p-1 relative ${
+                          isCurrentDate ? 'border-red-500 bg-red-50' : 'border-gray-200'
+                        }`}
+                      >
+                        <div className="text-xs font-medium text-right text-gray-500">
+                          {format(currentDate, "d", { locale: es })}
+                        </div>
+                        
+                        {/* Tareas que vencen este día */}
+                        <div className="mt-1 space-y-1 overflow-auto max-h-14">
+                          {itemsToShow.filter(task => isSameDay(task.dueDate, currentDate)).map(task => (
+                            <div 
+                              key={task.id}
+                              className="text-xs p-1 rounded"
+                              style={{ 
+                                backgroundColor: `${getTaskColor(task)}40`, 
+                                borderLeft: `3px solid ${getTaskColor(task)}` 
+                              }}
+                              title={`${task.name} (${format(task.dueDate, "dd/MM/yyyy")})`}
+                            >
+                              <div className="truncate">{task.name}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
       
       {/* Leyenda */}
-      <div className="mt-4 pt-4 border-t border-gray-200">
+      <div className="mt-6 pt-4 border-t border-gray-200">
         <div className="text-sm text-gray-600 font-medium mb-2">Leyenda:</div>
         <div className="flex flex-wrap gap-4 text-xs">
           <div className="flex items-center">
@@ -239,14 +268,9 @@ export default function AcademicGanttChart({ tasks = [], showAllTasks = false })
             <div className="w-4 h-4 bg-green-500 rounded mr-1"></div>
             <span>Baja Prioridad</span>
           </div>
-          {isBefore(timeRange.start, today) && isBefore(today, timeRange.end) && (
-            <div className="flex items-center">
-              <div className="w-px h-4 bg-red-500 mx-2"></div>
-              <span>Hoy</span>
-            </div>
-          )}
           <div className="flex items-center">
-            <span>⚠️ Atrasado</span>
+            <div className="border-l-2 border-red-500 h-4 mx-2"></div>
+            <span>Hoy</span>
           </div>
         </div>
       </div>
