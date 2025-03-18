@@ -240,15 +240,15 @@ export default function NoteDetail() {
   // Renderizar modo de estudio (pantalla completa sin distracciones)
   if (studyMode) {
     return (
-      <div className="fixed inset-0 bg-white z-50 overflow-y-auto">
+      <div className="fixed inset-0 bg-white dark:bg-gray-900 z-50 overflow-y-auto">
         <div className="max-w-4xl mx-auto py-8 px-4">
           {/* Barra de herramientas superior */}
-          <div className="flex justify-between items-center mb-6 sticky top-0 bg-white py-2 border-b">
-            <h1 className="text-2xl font-bold">{note.title}</h1>
+          <div className="flex justify-between items-center mb-6 sticky top-0 bg-white dark:bg-gray-900 py-2 border-b dark:border-gray-700">
+            <h1 className="text-2xl font-bold dark:text-white">{note.title}</h1>
             <div className="flex gap-2">
               <button
                 onClick={toggleImportant}
-                className={`p-2 rounded-full ${isImportant ? 'text-yellow-500' : 'text-gray-400'}`}
+                className={`p-2 rounded-full ${isImportant ? 'text-yellow-500' : 'text-gray-400 dark:text-gray-500'}`}
                 title={isImportant ? "Quitar de destacados" : "Marcar como importante"}
               >
                 <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
@@ -257,7 +257,7 @@ export default function NoteDetail() {
               </button>
               <button
                 onClick={() => router.push(`/notes/${note._id}/edit`)}
-                className="p-2 rounded-full text-gray-600 hover:text-blue-600"
+                className="p-2 rounded-full text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
                 title="Editar nota"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -266,7 +266,7 @@ export default function NoteDetail() {
               </button>
               <button
                 onClick={() => setStudyMode(false)}
-                className="p-2 rounded-full text-gray-600 hover:text-red-600"
+                className="p-2 rounded-full text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400"
                 title="Salir del modo estudio (ESC)"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 24 24">
@@ -277,17 +277,17 @@ export default function NoteDetail() {
           </div>
 
           {/* Contenido formateado */}
-          <div className="prose prose-lg max-w-none mx-auto">
+          <div className="prose prose-lg max-w-none mx-auto dark:prose-invert">
             <div dangerouslySetInnerHTML={{ __html: marked(note.content) }} />
           </div>
 
           {/* Pie de página */}
-          <div className="mt-8 pt-4 border-t text-sm text-gray-500 flex justify-between">
+          <div className="mt-8 pt-4 border-t dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400 flex justify-between">
             <div>
               Última actualización: {format(new Date(note.updatedAt), 'PPP', { locale: es })}
             </div>
             <div>
-              <kbd className="px-2 py-1 bg-gray-100 rounded text-xs">ESC</kbd> para salir
+              <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-800 dark:text-gray-300 rounded text-xs">ESC</kbd> para salir
             </div>
           </div>
         </div>
@@ -303,7 +303,7 @@ export default function NoteDetail() {
 
       <div className="mb-6 flex justify-between items-center">
         <div className="flex items-center">
-          <h1 className="text-2xl font-bold">{note.title}</h1>
+          <h1 className="text-2xl font-bold dark:text-white">{note.title}</h1>
           {isImportant && (
             <span className="ml-2 text-yellow-500">
               <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
@@ -315,14 +315,14 @@ export default function NoteDetail() {
         <div className="flex items-center space-x-2">
           <button
             onClick={toggleImportant}
-            className={`p-1 rounded ${isImportant ? 'text-yellow-500' : 'text-gray-400 hover:text-yellow-500'}`}
+            className={`p-1 rounded ${isImportant ? 'text-yellow-500' : 'text-gray-400 dark:text-gray-500 hover:text-yellow-500 dark:hover:text-yellow-500'}`}
             title={isImportant ? "Quitar de destacados" : "Marcar como importante (F)"}
           >
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
               <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
             </svg>
           </button>
-          <Link href="/notes" className="text-blue-600 hover:text-blue-800 flex items-center">
+          <Link href="/notes" className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center">
             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
@@ -334,7 +334,7 @@ export default function NoteDetail() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Contenido principal de la nota */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             {/* Barra de herramientas de la nota */}
             <div className="flex flex-wrap justify-between items-center mb-4">
               <div className="flex flex-wrap gap-2 mb-2">
@@ -352,12 +352,12 @@ export default function NoteDetail() {
                 {note.tags && note.tags.map((tag, index) => (
                   <span 
                     key={index}
-                    className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800"
+                    className="px-2 py-1 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300"
                   >
                     #{tag}
                   </span>
                 ))}
-                <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
+                <span className="px-2 py-1 text-xs rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300">
                   {format(new Date(note.updatedAt), 'PPP', { locale: es })}
                 </span>
               </div>
@@ -365,7 +365,7 @@ export default function NoteDetail() {
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   onClick={() => setStudyMode(true)}
-                  className="flex items-center px-3 py-1 text-sm bg-green-50 text-green-700 rounded-md hover:bg-green-100"
+                  className="flex items-center px-3 py-1 text-sm bg-green-50 dark:bg-green-900 text-green-700 dark:text-green-300 rounded-md hover:bg-green-100 dark:hover:bg-green-800"
                   title="Modo estudio (S)"
                 >
                   <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -376,7 +376,7 @@ export default function NoteDetail() {
                 
                 <button
                   onClick={shareNote}
-                  className="flex items-center px-3 py-1 text-sm bg-blue-50 text-blue-700 rounded-md hover:bg-blue-100"
+                  className="flex items-center px-3 py-1 text-sm bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-md hover:bg-blue-100 dark:hover:bg-blue-800"
                   title="Compartir nota"
                 >
                   <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -387,7 +387,7 @@ export default function NoteDetail() {
                 
                 <button
                   onClick={() => window.print()}
-                  className="flex items-center px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+                  className="flex items-center px-3 py-1 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600"
                   title="Imprimir nota"
                 >
                   <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -399,26 +399,26 @@ export default function NoteDetail() {
             </div>
 
             {/* Contenido de la nota con markdown */}
-            <div className="prose prose-sm md:prose lg:prose-lg max-w-none mb-6">
+            <div className="prose prose-sm md:prose lg:prose-lg max-w-none mb-6 dark:prose-invert">
               {note.content ? (
                 <div dangerouslySetInnerHTML={{ __html: marked(note.content) }} />
               ) : (
-                <p className="text-gray-500 italic">Esta nota no tiene contenido.</p>
+                <p className="text-gray-500 dark:text-gray-400 italic">Esta nota no tiene contenido.</p>
               )}
             </div>
 
             {/* Acciones de la nota */}
-            <div className="flex items-center justify-between pt-4 border-t">
+            <div className="flex items-center justify-between pt-4 border-t dark:border-gray-700">
               <div className="flex space-x-2">
                 <button
                   onClick={() => router.push(`/notes/${note._id}/edit`)}
-                  className="px-4 py-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                  className="px-4 py-2 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded hover:bg-blue-200 dark:hover:bg-blue-800"
                 >
                   Editar
                 </button>
                 <button
                   onClick={deleteNote}
-                  className="px-4 py-2 bg-red-100 text-red-700 rounded hover:bg-red-200"
+                  className="px-4 py-2 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-800"
                 >
                   Eliminar
                 </button>
@@ -426,7 +426,7 @@ export default function NoteDetail() {
               
               <button
                 onClick={() => setViewHistory(!viewHistory)}
-                className="text-sm text-gray-600 hover:text-blue-600 flex items-center"
+                className="text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 flex items-center"
               >
                 <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -438,25 +438,25 @@ export default function NoteDetail() {
           
           {/* Historial de revisiones */}
           {viewHistory && (
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-semibold mb-3">Historial de revisiones</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <h2 className="text-lg font-semibold mb-3 dark:text-white">Historial de revisiones</h2>
               {noteHistory.length > 0 ? (
                 <div className="space-y-3">
                   {noteHistory.map((revision, index) => (
                     <div key={index} className="border-l-4 border-blue-500 pl-4 py-2">
                       <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium">
+                        <span className="text-sm font-medium dark:text-gray-300">
                           {format(new Date(revision.timestamp), 'PPpp', { locale: es })}
                         </span>
                         <button
                           onClick={() => router.push(`/notes/${note._id}/revision/${revision.id}`)}
-                          className="text-xs text-blue-600 hover:underline"
+                          className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
                         >
                           Ver esta versión
                         </button>
                       </div>
                       {revision.changes && (
-                        <div className="text-xs text-gray-500 mt-1">
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                           {revision.changes.map((change, idx) => (
                             <div key={idx}>{change}</div>
                           ))}
@@ -466,18 +466,18 @@ export default function NoteDetail() {
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-500 text-center">No hay revisiones previas disponibles</p>
+                <p className="text-gray-500 dark:text-gray-400 text-center">No hay revisiones previas disponibles</p>
               )}
             </div>
           )}
           
           {/* Imágenes de la nota */}
           {note.images && note.images.length > 0 && (
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-semibold mb-3">Imágenes ({note.images.length})</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <h2 className="text-lg font-semibold mb-3 dark:text-white">Imágenes ({note.images.length})</h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 {note.images.map((img, index) => (
-                  <div key={index} className="border rounded overflow-hidden">
+                  <div key={index} className="border dark:border-gray-700 rounded overflow-hidden">
                     <a href={img} target="_blank" rel="noopener noreferrer">
                       <img
                         src={img}
@@ -498,34 +498,34 @@ export default function NoteDetail() {
           <NoteRelatedTasks noteId={id} />
           
           {/* Metadatos de la nota */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="font-medium mb-3">Detalles</h3>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h3 className="font-medium mb-3 dark:text-white">Detalles</h3>
             <ul className="space-y-2 text-sm">
               <li className="flex justify-between">
-                <span className="text-gray-600">Fecha de creación:</span>
-                <span className="font-medium">
+                <span className="text-gray-600 dark:text-gray-400">Fecha de creación:</span>
+                <span className="font-medium dark:text-gray-300">
                   {note.createdAt && format(new Date(note.createdAt), 'dd/MM/yyyy', { locale: es })}
                 </span>
               </li>
               <li className="flex justify-between">
-                <span className="text-gray-600">Última actualización:</span>
-                <span className="font-medium">
+                <span className="text-gray-600 dark:text-gray-400">Última actualización:</span>
+                <span className="font-medium dark:text-gray-300">
                   {note.updatedAt && format(new Date(note.updatedAt), 'dd/MM/yyyy', { locale: es })}
                 </span>
               </li>
               {note.contentStats && (
                 <>
                   <li className="flex justify-between">
-                    <span className="text-gray-600">Palabras:</span>
-                    <span className="font-medium">{note.contentStats.words}</span>
+                    <span className="text-gray-600 dark:text-gray-400">Palabras:</span>
+                    <span className="font-medium dark:text-gray-300">{note.contentStats.words}</span>
                   </li>
                   <li className="flex justify-between">
-                    <span className="text-gray-600">Caracteres:</span>
-                    <span className="font-medium">{note.contentStats.chars}</span>
+                    <span className="text-gray-600 dark:text-gray-400">Caracteres:</span>
+                    <span className="font-medium dark:text-gray-300">{note.contentStats.chars}</span>
                   </li>
                   <li className="flex justify-between">
-                    <span className="text-gray-600">Tiempo de lectura:</span>
-                    <span className="font-medium">{note.contentStats.readingTime} minutos</span>
+                    <span className="text-gray-600 dark:text-gray-400">Tiempo de lectura:</span>
+                    <span className="font-medium dark:text-gray-300">{note.contentStats.readingTime} minutos</span>
                   </li>
                 </>
               )}
@@ -533,24 +533,24 @@ export default function NoteDetail() {
           </div>
           
           {/* Atajos de teclado */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="font-medium mb-3">Atajos de teclado</h3>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h3 className="font-medium mb-3 dark:text-white">Atajos de teclado</h3>
             <div className="grid grid-cols-2 gap-2 text-sm">
               <div className="flex items-center">
-                <kbd className="px-2 py-1 bg-gray-100 rounded text-xs mr-2">S</kbd>
-                <span>Modo estudio</span>
+                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 dark:text-gray-300 rounded text-xs mr-2">S</kbd>
+                <span className="dark:text-gray-300">Modo estudio</span>
               </div>
               <div className="flex items-center">
-                <kbd className="px-2 py-1 bg-gray-100 rounded text-xs mr-2">E</kbd>
-                <span>Editar nota</span>
+                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 dark:text-gray-300 rounded text-xs mr-2">E</kbd>
+                <span className="dark:text-gray-300">Editar nota</span>
               </div>
               <div className="flex items-center">
-                <kbd className="px-2 py-1 bg-gray-100 rounded text-xs mr-2">F</kbd>
-                <span>Marcar favorito</span>
+                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 dark:text-gray-300 rounded text-xs mr-2">F</kbd>
+                <span className="dark:text-gray-300">Marcar favorito</span>
               </div>
               <div className="flex items-center">
-                <kbd className="px-2 py-1 bg-gray-100 rounded text-xs mr-2">ESC</kbd>
-                <span>Salir de modo estudio</span>
+                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 dark:text-gray-300 rounded text-xs mr-2">ESC</kbd>
+                <span className="dark:text-gray-300">Salir de modo estudio</span>
               </div>
             </div>
           </div>
