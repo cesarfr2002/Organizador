@@ -1,9 +1,31 @@
-// Suponiendo que esta es la estructura básica de la página
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
+import { useSession } from 'next-auth/react';
+import Head from 'next/head';
+import Layout from '../../../components/Layout';
+import ResourceForm from '../../../components/ResourceForm';
+import { toast } from 'react-toastify';
 
 export default function EditResource() {
-  // Código existente...
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const { id } = router.query;
+  const [resource, setResource] = useState(null);
+  const [subjects, setSubjects] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // En la función fetchResource, después de obtener los datos del recurso:
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/login');
+      return;
+    }
+    
+    if (id && status === 'authenticated') {
+      fetchResource();
+      fetchSubjects();
+    }
+  }, [id, status, router]);
+
   const fetchResource = async () => {
     try {
       const res = await fetch(`/api/resources/${id}`);
@@ -29,26 +51,71 @@ export default function EditResource() {
         throw new Error('Error al cargar el recurso');
       }
     } catch (error) {
-      console.error('Error:', error);
-      toast.error('No se pudo cargar el recurso');
+      console.error('Error fetching resource:', error);
+      toast.error('Error al cargar el recurso');
       router.push('/resources');
     } finally {
       setLoading(false);
     }
   };
 
-  // Resto del código...
+  const fetchSubjects = async () => {
+    try {
+      const res = await fetch('/api/subjects');
+      if (res.ok) {
+        const data = await res.json();
+        setSubjects(data);
+      } else {
+        throw new Error('Error al cargar asignaturas');
+      }
+    } catch (error) {
+      console.error('Error fetching subjects:', error);
+      toast.error('Error al cargar las asignaturas');
+    }
+  };
+
+  const handleSuccess = () => {
+    toast.success('Recurso actualizado exitosamente');
+    router.push(`/resources/${id}`);
+  };
+
+  const handleCancel = () => {
+    router.back();
+  };
+
+  if (status === 'loading' || loading) {
+    return (
+      <Layout>
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
-      {/* Código existente... */}
-      
+      <Head>
+        <title>Editar Recurso | UniOrganizer</title>
+      </Head>
+
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold">Editar Recurso</h1>
+      </div>
+
       <ResourceForm 
-        subjects={subjects}
-        resource={resource}
-        onSuccess={() => router.push('/resources')}
-        onCancel={() => router.back()}
+        resource={resource} 
+        subjects={subjects} 
+        onSuccess={handleSuccess} 
+        onCancel={handleCancel} 
       />
     </Layout>
   );
+}
+
+// Add this to support server-side rendering and require authentication
+export async function getServerSideProps(context) {
+  return {
+    props: {}, // will be passed to the page component as props
+  };
 }
