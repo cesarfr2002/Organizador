@@ -1,48 +1,46 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../auth/[...nextauth]";
-import dbConnect from "../../../../utils/dbConnect";
+import dbConnect from "../../../../lib/dbConnect";
 import Event from "../../../../models/Event";
 
 export default async function handler(req, res) {
+  const session = await getServerSession(req, res, authOptions);
+  
+  if (!session) {
+    return res.status(401).json({ error: 'No autorizado' });
+  }
+  
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', ['POST']);
+    return res.status(405).json({ error: 'Método no permitido' });
+  }
+  
+  await dbConnect();
+  const userId = session.user.id;
+  
   try {
-    // Check if user is authenticated
-    const session = await getServerSession(req, res, authOptions);
-    if (!session) {
-      return res.status(401).json({ error: 'No autorizado' });
+    const { events } = req.body;
+    
+    if (!Array.isArray(events) || events.length === 0) {
+      return res.status(400).json({ error: 'Se requiere un arreglo de eventos no vacío' });
     }
     
-    // Connect to database
-    await dbConnect();
+    // Add userId to each event
+    const eventsWithUserId = events.map(event => ({
+      ...event,
+      userId: userId
+    }));
     
-    // Only allow POST requests
-    if (req.method === 'POST') {
-      const { events } = req.body;
-      
-      if (!events || !Array.isArray(events) || events.length === 0) {
-        return res.status(400).json({ error: 'Se requiere un array de eventos válido' });
-      }
-      
-      // Prepare events with user ID
-      const eventsToSave = events.map(event => ({
-        ...event,
-        userId: session.user.id,
-        isAutoScheduled: event.isAutoScheduled || false
-      }));
-      
-      // Insert all events
-      const result = await Event.insertMany(eventsToSave);
-      
-      return res.status(201).json({ 
-        message: 'Eventos creados correctamente',
-        count: result.length,
-        events: result
-      });
-    } else {
-      res.setHeader('Allow', ['POST']);
-      return res.status(405).end(`Method ${req.method} Not Allowed`);
-    }
+    // Insert all events in one operation
+    const result = await Event.insertMany(eventsWithUserId);
+    
+    return res.status(201).json({
+      message: `${result.length} eventos creados exitosamente`,
+      events: result
+    });
+    
   } catch (error) {
-    console.error('Error adding bulk events:', error);
-    return res.status(500).json({ error: 'Error al procesar la solicitud' });
+    console.error('Error creating events in bulk:', error);
+    return res.status(500).json({ error: 'Error al crear eventos: ' + error.message });
   }
 }
