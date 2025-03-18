@@ -56,9 +56,9 @@ export default function TaskList({ tasks, toggleTaskStatus, deleteTask }) {
                 
                 {/* Etiqueta de prioridad */}
                 <span className={`px-2 py-1 text-xs rounded-full ${
-                  task.priority === 'Alta' ? 'bg-red-100 text-red-800' : 
-                  task.priority === 'Media' ? 'bg-yellow-100 text-yellow-800' : 
-                  'bg-green-100 text-green-800'
+                  task.priority === 'Alta' ? 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200' : 
+                  task.priority === 'Media' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-200' : 
+                  'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200'
                 }`}>
                   {task.priority}
                 </span>
@@ -67,10 +67,10 @@ export default function TaskList({ tasks, toggleTaskStatus, deleteTask }) {
                 {task.dueDate && (
                   <span className={`px-2 py-1 text-xs rounded-full ${
                     isPast(new Date(task.dueDate)) && !isToday(new Date(task.dueDate)) && !task.completed
-                      ? 'bg-red-100 text-red-800'
+                      ? 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200'
                       : isToday(new Date(task.dueDate))
-                        ? 'bg-amber-100 text-amber-800'
-                        : 'bg-blue-100 text-blue-800'
+                        ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200'
+                        : 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200'
                   }`}>
                     {format(new Date(task.dueDate), 'dd MMM', { locale: es })}
                   </span>
@@ -80,7 +80,7 @@ export default function TaskList({ tasks, toggleTaskStatus, deleteTask }) {
                 <div className="flex items-center space-x-1" onClick={e => e.stopPropagation()}>
                   <button
                     onClick={(e) => startPomodoro(e, task._id)}
-                    className="p-1 hover:bg-gray-100 rounded text-red-500"
+                    className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-red-500 dark:text-red-400"
                     title="Iniciar Pomodoro"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

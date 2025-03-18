@@ -65,22 +65,22 @@ export default function QuickTasks() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div>
-          <h1 className="text-2xl font-bold mb-6">Crear Tarea Rápida</h1>
+          <h1 className="text-2xl font-bold mb-6 dark:text-white">Crear Tarea Rápida</h1>
           <QuickTaskForm onSuccess={handleTaskCreated} />
           
           <div className="mt-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-medium">Consejos de productividad</h2>
+              <h2 className="text-lg font-medium dark:text-white">Consejos de productividad</h2>
             </div>
-            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-md">
-              <p className="text-sm text-blue-800">
+            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-md dark:bg-blue-900/30 dark:border-blue-700">
+              <p className="text-sm text-blue-800 dark:text-blue-200">
                 <strong>Consejo:</strong> Divide las tareas grandes en subtareas más pequeñas y específicas. 
                 Esto facilita el seguimiento del progreso y reduce la procrastinación.
               </p>
-              <p className="text-sm text-blue-800 mt-2">
+              <p className="text-sm text-blue-800 dark:text-blue-200 mt-2">
                 <button 
                   onClick={() => router.push('/tasks/eisenhower')}
-                  className="text-blue-600 hover:text-blue-800 font-medium flex items-center mt-1"
+                  className="text-blue-600 hover:text-blue-800 font-medium flex items-center mt-1 dark:text-blue-400 dark:hover:text-blue-300"
                 >
                   <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
@@ -94,10 +94,10 @@ export default function QuickTasks() {
 
         <div>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold">Tareas Recientes</h2>
+            <h2 className="text-2xl font-bold dark:text-white">Tareas Recientes</h2>
             <button
               onClick={() => router.push('/tasks')}
-              className="text-blue-600 hover:text-blue-800 flex items-center text-sm"
+              className="text-blue-600 hover:text-blue-800 flex items-center text-sm dark:text-blue-400 dark:hover:text-blue-300"
             >
               Ver todas
               <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">

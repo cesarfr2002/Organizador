@@ -62,20 +62,20 @@ export default function EisenhowerMatrix({ tasks = [] }) {
   const renderQuadrant = (title, tasks, description, bgColor, borderColor, icon, action) => {
     return (
       <div 
-        className={`${bgColor} rounded-lg shadow-md overflow-hidden border-t-4 ${borderColor} h-full flex flex-col`}
+        className={`${bgColor} rounded-lg shadow-md overflow-hidden border-t-4 ${borderColor} h-full flex flex-col dark:bg-gray-800`}
       >
-        <div className="p-4 border-b">
+        <div className="p-4 border-b dark:border-gray-700">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="font-bold text-lg flex items-center">
+            <h3 className="font-bold text-lg flex items-center dark:text-white">
               {icon}
               <span className="ml-2">{title}</span>
-              <span className="ml-2 bg-white text-gray-700 text-xs font-medium px-2 py-0.5 rounded-full">
+              <span className="ml-2 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 text-xs font-medium px-2 py-0.5 rounded-full">
                 {tasks.length}
               </span>
             </h3>
             <button 
               onClick={() => setActiveQuadrant(activeQuadrant === title ? null : title)} 
-              className="text-gray-500 hover:text-gray-700"
+              className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={
@@ -86,11 +86,11 @@ export default function EisenhowerMatrix({ tasks = [] }) {
               </svg>
             </button>
           </div>
-          <p className="text-sm text-gray-600 my-2">{description}</p>
-          <div className="text-sm italic text-gray-500 mt-2">{action}</div>
+          <p className="text-sm text-gray-600 dark:text-gray-300 my-2">{description}</p>
+          <div className="text-sm italic text-gray-500 dark:text-gray-400 mt-2">{action}</div>
         </div>
         
-        <div className={`flex-grow ${activeQuadrant === title ? '' : 'hidden'} p-4 bg-white`}>
+        <div className={`flex-grow ${activeQuadrant === title ? '' : 'hidden'} p-4 bg-white dark:bg-gray-700`}>
           {tasks.length > 0 ? (
             <TaskList 
               tasks={tasks} 
@@ -99,7 +99,7 @@ export default function EisenhowerMatrix({ tasks = [] }) {
               showCategory={true}
             />
           ) : (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
               <p>No hay tareas en este cuadrante</p>
             </div>
           )}

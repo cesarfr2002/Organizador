@@ -91,20 +91,20 @@ export default function ScheduleManager({ subjects }) {
   };
 
   const renderWeekView = () => (
-    <div className="border rounded-lg shadow overflow-x-auto">
+    <div className="border dark:border-gray-700 rounded-lg shadow overflow-x-auto">
       <table className="w-full min-w-max">
         <thead>
           <tr>
-            <th className="border p-2">Hora</th>
+            <th className="border p-2 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200">Hora</th>
             {DAYS.map(day => (
-              <th key={day} className="border p-2">{day}</th>
+              <th key={day} className="border p-2 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200">{day}</th>
             ))}
           </tr>
         </thead>
         <tbody>
           {HOURS.map(hour => (
-            <tr key={hour}>
-              <td className="border p-2 text-center">
+            <tr key={hour} className="dark:bg-gray-900">
+              <td className="border p-2 text-center dark:border-gray-700 dark:text-gray-300">
                 {`${hour}:00 - ${hour + 2}:00`}
               </td>
               {DAYS.map((_, dayIndex) => {
@@ -137,14 +137,14 @@ export default function ScheduleManager({ subjects }) {
                 );
                 
                 return (
-                  <td key={dayIndex} className="border p-0 h-24 relative">
+                  <td key={dayIndex} className="border p-0 h-24 relative dark:border-gray-700">
                     {uniqueClasses.map((cls, idx) => (
                       <div 
                         key={idx}
                         onClick={() => handleClassClick(cls)}
-                        className="absolute inset-0 m-1 p-2 rounded overflow-hidden text-xs cursor-pointer hover:shadow-md transition-shadow"
+                        className="absolute inset-0 m-1 p-2 rounded overflow-hidden text-xs cursor-pointer hover:shadow-md transition-shadow dark:text-gray-200"
                         style={{ 
-                          backgroundColor: cls.color + '40', 
+                          backgroundColor: `${cls.color}${darkMode ? '60' : '40'}`, 
                           borderLeft: `4px solid ${cls.color}` 
                         }}
                       >
@@ -201,14 +201,14 @@ export default function ScheduleManager({ subjects }) {
           const classes = classesByDay[dayNumber];
           
           return (
-            <div key={day} className="bg-white rounded-lg shadow">
-              <h3 className="font-medium text-lg p-3 bg-gray-50 border-b">{day}</h3>
+            <div key={day} className="bg-white dark:bg-gray-800 rounded-lg shadow">
+              <h3 className="font-medium text-lg p-3 bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-700">{day}</h3>
               {classes.length > 0 ? (
-                <div className="divide-y">
+                <div className="divide-y dark:divide-gray-700">
                   {classes.map((cls, idx) => (
                     <div 
                       key={idx} 
-                      className="p-3 hover:bg-gray-50 cursor-pointer"
+                      className="p-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
                       onClick={() => handleClassClick(cls)}
                     >
                       <div className="flex justify-between items-start">
@@ -221,13 +221,13 @@ export default function ScheduleManager({ subjects }) {
                             {cls.name}
                           </div>
                           {cls.professor && (
-                            <div className="text-xs text-gray-600 mt-1">Prof. {cls.professor}</div>
+                            <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">Prof. {cls.professor}</div>
                           )}
                         </div>
-                        <div className="text-sm">{cls.startTime} - {cls.endTime}</div>
+                        <div className="text-sm dark:text-gray-300">{cls.startTime} - {cls.endTime}</div>
                       </div>
                       {cls.location && (
-                        <div className="mt-1 text-sm text-gray-600 flex items-center">
+                        <div className="mt-1 text-sm text-gray-600 dark:text-gray-400 flex items-center">
                           <svg className="w-4 h-4 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
                           </svg>
@@ -238,7 +238,7 @@ export default function ScheduleManager({ subjects }) {
                   ))}
                 </div>
               ) : (
-                <div className="p-4 text-center text-gray-500">
+                <div className="p-4 text-center text-gray-500 dark:text-gray-400">
                   No hay clases programadas para este día
                 </div>
               )}
@@ -252,7 +252,7 @@ export default function ScheduleManager({ subjects }) {
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold">Mi Horario</h2>
+        <h2 className="text-2xl font-bold dark:text-gray-200">Mi Horario</h2>
         
         <div className="flex space-x-3">
           {/* Filtro de campus */}
@@ -260,7 +260,7 @@ export default function ScheduleManager({ subjects }) {
             <select 
               value={campusFilter}
               onChange={(e) => setCampusFilter(e.target.value)}
-              className="border border-gray-300 rounded px-3 py-1 text-sm bg-white"
+              className="border border-gray-300 dark:border-gray-700 rounded px-3 py-1 text-sm bg-white dark:bg-gray-800 dark:text-gray-200"
             >
               <option value="all">Todos los campus</option>
               {availableCampuses.map(campus => (
@@ -270,16 +270,16 @@ export default function ScheduleManager({ subjects }) {
           )}
           
           {/* Selector de vista */}
-          <div className="flex border rounded overflow-hidden">
+          <div className="flex border rounded overflow-hidden dark:border-gray-700">
             <button 
               onClick={() => setViewMode('week')}
-              className={`px-3 py-1 text-sm ${viewMode === 'week' ? 'bg-blue-500 text-white' : 'bg-white'}`}
+              className={`px-3 py-1 text-sm ${viewMode === 'week' ? 'bg-blue-500 text-white' : 'bg-white dark:bg-gray-800 dark:text-gray-200'}`}
             >
               Semana
             </button>
             <button 
               onClick={() => setViewMode('list')}
-              className={`px-3 py-1 text-sm ${viewMode === 'list' ? 'bg-blue-500 text-white' : 'bg-white'}`}
+              className={`px-3 py-1 text-sm ${viewMode === 'list' ? 'bg-blue-500 text-white' : 'bg-white dark:bg-gray-800 dark:text-gray-200'}`}
             >
               Lista
             </button>
@@ -289,12 +289,12 @@ export default function ScheduleManager({ subjects }) {
       
       {/* Detalles de clase seleccionada */}
       {selectedClass && (
-        <div className="mb-4 bg-white p-4 rounded-lg shadow border-l-4" style={{ borderLeftColor: selectedClass.color }}>
+        <div className="mb-4 bg-white dark:bg-gray-800 p-4 rounded-lg shadow border-l-4" style={{ borderLeftColor: selectedClass.color }}>
           <div className="flex justify-between">
-            <h3 className="text-xl font-medium">{selectedClass.name}</h3>
+            <h3 className="text-xl font-medium dark:text-gray-200">{selectedClass.name}</h3>
             <button 
               onClick={() => setSelectedClass(null)} 
-              className="text-gray-500 hover:text-gray-700"
+              className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
@@ -305,20 +305,20 @@ export default function ScheduleManager({ subjects }) {
           <div className="mt-2 space-y-2">
             {selectedClass.professor && (
               <div className="flex">
-                <span className="font-medium w-24">Profesor:</span>
-                <span>{selectedClass.professor}</span>
+                <span className="font-medium w-24 dark:text-gray-200">Profesor:</span>
+                <span className="dark:text-gray-300">{selectedClass.professor}</span>
               </div>
             )}
             
             <div className="flex">
-              <span className="font-medium w-24">Horario:</span>
-              <span>{DAYS[parseInt(selectedClass.startTime.split('-')[0]) - 1]}, {selectedClass.startTime} - {selectedClass.endTime}</span>
+              <span className="font-medium w-24 dark:text-gray-200">Horario:</span>
+              <span className="dark:text-gray-300">{DAYS[parseInt(selectedClass.startTime.split('-')[0]) - 1]}, {selectedClass.startTime} - {selectedClass.endTime}</span>
             </div>
             
             {selectedClass.location && (
               <div className="flex items-start">
-                <span className="font-medium w-24">Ubicación:</span>
-                <div>
+                <span className="font-medium w-24 dark:text-gray-200">Ubicación:</span>
+                <div className="dark:text-gray-300">
                   {typeof selectedClass.location === 'string' ? (
                     <span>{selectedClass.location}</span>
                   ) : (
@@ -342,7 +342,7 @@ export default function ScheduleManager({ subjects }) {
               href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(formatLocation(selectedClass.location))}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center text-sm text-blue-600 hover:text-blue-800"
+              className="flex items-center text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-600"
             >
               <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>

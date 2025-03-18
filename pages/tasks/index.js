@@ -424,19 +424,25 @@ export default function Tasks() {
       </div>
       
       {/* Weekly Calendar View */}
-      <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <h2 className="text-lg font-semibold mb-3">Esta Semana</h2>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
+        <h2 className="text-lg font-semibold mb-3 dark:text-white">Esta Semana</h2>
         <div className="grid grid-cols-7 gap-2">
           {weeklyTasks.map((day, index) => (
             <div 
               key={index} 
-              className={`border rounded-lg p-3 ${day.isToday ? 'border-blue-500 bg-blue-50' : ''}`}
+              className={`border rounded-lg p-3 ${
+                day.isToday 
+                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 dark:border-blue-400' 
+                : 'dark:border-gray-700 dark:bg-gray-700/30'}`}
             >
               <div className="text-center mb-2">
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-gray-500 dark:text-gray-400">
                   {format(day.date, 'EEE', { locale: es })}
                 </div>
-                <div className={`text-lg font-medium ${day.isToday ? 'text-blue-600' : ''}`}>
+                <div className={`text-lg font-medium ${
+                  day.isToday 
+                  ? 'text-blue-600 dark:text-blue-400' 
+                  : 'dark:text-white'}`}>
                   {format(day.date, 'd')}
                 </div>
               </div>
@@ -448,25 +454,25 @@ export default function Tasks() {
                       key={task._id} 
                       className={`text-xs p-1 rounded truncate
                         ${task.completed 
-                          ? 'bg-gray-100 text-gray-500 line-through' 
+                          ? 'bg-gray-100 text-gray-500 line-through dark:bg-gray-600 dark:text-gray-400' 
                           : task.priority === 'Alta' 
-                            ? 'bg-red-100 text-red-800 font-medium' 
+                            ? 'bg-red-100 text-red-800 font-medium dark:bg-red-900/40 dark:text-red-300' 
                             : task.priority === 'Media'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-blue-100 text-blue-800'}`}
+                              ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
+                              : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'}`}
                       title={task.title}
                     >
                       {task.title}
                     </div>
                   ))}
                   {day.tasks.length > 3 && (
-                    <div className="text-xs text-center text-gray-500 mt-1">
+                    <div className="text-xs text-center text-gray-500 dark:text-gray-400 mt-1">
                       +{day.tasks.length - 3} más
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="text-xs text-center text-gray-400 h-12 flex items-center justify-center">
+                <div className="text-xs text-center text-gray-400 dark:text-gray-500 h-12 flex items-center justify-center">
                   Sin tareas
                 </div>
               )}

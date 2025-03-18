@@ -160,30 +160,30 @@ export default function AcademicGanttChart({ tasks = [], showAllTasks = false })
   const today = startOfDay(new Date());
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow-md">
-      <h3 className="text-lg font-medium mb-4">Cronograma de Proyectos Académicos</h3>
+    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md">
+      <h3 className="text-lg font-medium mb-4 dark:text-white">Cronograma de Proyectos Académicos</h3>
       
       {itemsToShow.length === 0 ? (
-        <div className="text-center py-8 text-gray-500">
+        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
           <p>No hay proyectos o tareas para mostrar en el cronograma</p>
         </div>
       ) : (
         <div className="relative">
           {/* Línea de tiempo actual (HOY) */}
           <div 
-            className="absolute top-0 bottom-0 border-l-2 border-red-500 z-10"
+            className="absolute top-0 bottom-0 border-l-2 border-red-500 dark:border-red-400 z-10"
             style={{ left: `${todayPosition}%` }}
           >
-            <div className="w-3 h-3 rounded-full bg-red-500 -ml-1.5"></div>
-            <div className="absolute -top-6 -ml-7 text-xs text-red-600 font-bold bg-white px-1">HOY</div>
+            <div className="w-3 h-3 rounded-full bg-red-500 dark:bg-red-400 -ml-1.5"></div>
+            <div className="absolute -top-6 -ml-7 text-xs text-red-600 dark:text-red-400 font-bold bg-white dark:bg-gray-800 px-1">HOY</div>
           </div>
           
           {/* Cabecera con fechas de semanas */}
-          <div className="border-b border-gray-200 mb-4">
+          <div className="border-b border-gray-200 dark:border-gray-700 mb-4">
             <div className="flex">
               {visibleWeeks.map((week, idx) => (
                 <div key={idx} className="flex-1 px-1 text-center">
-                  <div className="text-xs font-medium text-gray-500">
+                  <div className="text-xs font-medium text-gray-500 dark:text-gray-400">
                     {format(week.start, "dd MMM", { locale: es })} - {format(week.end, "dd MMM", { locale: es })}
                   </div>
                 </div>
@@ -196,7 +196,7 @@ export default function AcademicGanttChart({ tasks = [], showAllTasks = false })
             {/* Cabecera para días de la semana */}
             <div className="grid grid-cols-7 gap-1 mb-1">
               {Array(7).fill().map((_, day) => (
-                <div key={day} className="text-center text-xs font-medium text-gray-500">
+                <div key={day} className="text-center text-xs font-medium text-gray-500 dark:text-gray-400">
                   {getDayName(day)}
                 </div>
               ))}
@@ -214,11 +214,11 @@ export default function AcademicGanttChart({ tasks = [], showAllTasks = false })
                     return (
                       <div 
                         key={day} 
-                        className={`border rounded-md p-1 relative ${
-                          isCurrentDate ? 'border-red-500 bg-red-50' : 'border-gray-200'
+                        className={`border rounded-md p-1 relative dark:border-gray-700 ${
+                          isCurrentDate ? 'border-red-500 bg-red-50 dark:bg-red-900/30 dark:border-red-700' : 'dark:bg-gray-700'
                         }`}
                       >
-                        <div className="text-xs font-medium text-right text-gray-500">
+                        <div className="text-xs font-medium text-right text-gray-500 dark:text-gray-400">
                           {format(currentDate, "d", { locale: es })}
                         </div>
                         
@@ -227,9 +227,9 @@ export default function AcademicGanttChart({ tasks = [], showAllTasks = false })
                           {itemsToShow.filter(task => isSameDay(task.dueDate, currentDate)).map(task => (
                             <div 
                               key={task.id}
-                              className="text-xs p-1 rounded"
+                              className="text-xs p-1 rounded dark:text-white"
                               style={{ 
-                                backgroundColor: `${getTaskColor(task)}40`, 
+                                backgroundColor: `${getTaskColor(task)}${darkMode ? '70' : '40'}`, 
                                 borderLeft: `3px solid ${getTaskColor(task)}` 
                               }}
                               title={`${task.name} (${format(task.dueDate, "dd/MM/yyyy")})`}
@@ -249,8 +249,8 @@ export default function AcademicGanttChart({ tasks = [], showAllTasks = false })
       )}
       
       {/* Leyenda */}
-      <div className="mt-6 pt-4 border-t border-gray-200">
-        <div className="text-sm text-gray-600 font-medium mb-2">Leyenda:</div>
+      <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="text-sm text-gray-600 dark:text-gray-400 font-medium mb-2">Leyenda:</div>
         <div className="flex flex-wrap gap-4 text-xs">
           <div className="flex items-center">
             <div className="w-4 h-4 bg-red-500 rounded mr-1"></div>
