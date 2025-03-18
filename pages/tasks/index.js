@@ -670,7 +670,7 @@ export default function Tasks() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          deleteTask(task._id);
+                          handleDelete(task._id);
                         }}
                         className="p-1 hover:bg-gray-100 rounded"
                         title="Eliminar"
@@ -683,7 +683,7 @@ export default function Tasks() {
                   </div>
                 </div>
                 
-                {/* Descripción de la tarea (opcional, si quieres mostrarla) */}
+                {/* Descripción de la tarea (opcional) */}
                 {task.description && (
                   <p className="mt-2 text-sm text-gray-600 line-clamp-2">{task.description}</p>
                 )}

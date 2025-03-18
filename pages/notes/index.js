@@ -267,9 +267,12 @@ export default function Notes() {
       <NotesList 
         notes={notes} 
         deleteNote={deleteNote} 
-        onNoteClick={gamificationEnabled ? 
-          () => addPoints(3, 'Leer una nota') : 
-          null}
+        onNoteClick={
+          // Only provide the callback if addPoints is a function
+          gamificationEnabled && typeof addPoints === 'function' 
+            ? () => addPoints(3, 'Leer una nota') 
+            : null
+        }
       />
     </Layout>
   );
