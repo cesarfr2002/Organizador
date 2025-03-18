@@ -131,16 +131,16 @@ export default function Home() {
         {/* Columna principal - ocupa 8/12 en pantallas grandes */}
         <div className="lg:col-span-8 space-y-6">
           {/* Estadísticas */}
-          <section className="bg-white rounded-lg shadow">
-            <h2 className="text-lg font-semibold p-4 border-b">Resumen</h2>
+          <section className="bg-white dark:bg-gray-800 rounded-lg shadow">
+            <h2 className="text-lg font-semibold p-4 border-b dark:border-gray-700">Resumen</h2>
             <div className="p-4">
               <DashboardStats />
             </div>
           </section>
 
           {/* Temporizador de estudio */}
-          <section id="study-timer" className="bg-white rounded-lg shadow">
-            <h2 className="text-lg font-semibold p-4 border-b">Temporizador de estudio</h2>
+          <section id="study-timer" className="bg-white dark:bg-gray-800 rounded-lg shadow">
+            <h2 className="text-lg font-semibold p-4 border-b dark:border-gray-700">Temporizador de estudio</h2>
             <div className="p-6">
               <StudyTimer />
             </div>
@@ -150,15 +150,15 @@ export default function Home() {
         {/* Columna lateral - ocupa 4/12 en pantallas grandes */}
         <div className="lg:col-span-4 space-y-6">
           {/* Acciones rápidas */}
-          <div className="bg-white rounded-lg shadow">
-            <h2 className="text-lg font-semibold p-4 border-b">Acciones rápidas</h2>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+            <h2 className="text-lg font-semibold p-4 border-b dark:border-gray-700">Acciones rápidas</h2>
             <div className="p-4">
               <QuickActions />
               
               {/* Botón para mostrar/ocultar formulario de recursos */}
               <button 
                 onClick={() => setShowResourceForm(!showResourceForm)}
-                className="mt-3 w-full flex items-center justify-center px-4 py-2 border border-blue-300 rounded-md shadow-sm text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100"
+                className="mt-3 w-full flex items-center justify-center px-4 py-2 border border-blue-300 rounded-md shadow-sm text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900 dark:text-blue-300 dark:border-blue-700 dark:hover:bg-blue-800"
               >
                 {showResourceForm ? 'Ocultar formulario de recursos' : '+ Agregar recurso rápido'}
               </button>
@@ -176,20 +176,20 @@ export default function Home() {
           </div>
           
           {/* Horario del día con navegación */}
-          <section className="bg-white rounded-lg shadow">
-            <div className="flex justify-between items-center p-4 border-b">
+          <section className="bg-white dark:bg-gray-800 rounded-lg shadow">
+            <div className="flex justify-between items-center p-4 border-b dark:border-gray-700">
               <div className="flex items-center space-x-2">
                 <button 
                   onClick={goToPreviousDay}
-                  className="p-1 rounded-full hover:bg-gray-100"
+                  className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
                   title="Día anterior"
                 >
-                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
                 
-                <h2 className="text-lg font-semibold">
+                <h2 className="text-lg font-semibold dark:text-white">
                   {isSameDay(selectedDate, new Date())
                     ? 'Horario de hoy'
                     : isSameDay(selectedDate, addDays(new Date(), 1))
@@ -199,10 +199,10 @@ export default function Home() {
                 
                 <button 
                   onClick={goToNextDay}
-                  className="p-1 rounded-full hover:bg-gray-100"
+                  className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
                   title="Día siguiente"
                 >
-                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
                   </svg>
                 </button>
@@ -211,7 +211,7 @@ export default function Home() {
               {!isSameDay(selectedDate, new Date()) && (
                 <button 
                   onClick={goToToday}
-                  className="text-sm text-blue-600 hover:text-blue-800"
+                  className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
                   title="Ir a hoy"
                 >
                   Volver a hoy
@@ -225,20 +225,20 @@ export default function Home() {
           </section>
           
           {/* Tareas pendientes */}
-          <section className="bg-white rounded-lg shadow">
-            <h2 className="text-lg font-semibold p-4 border-b">Tareas pendientes</h2>
+          <section className="bg-white dark:bg-gray-800 rounded-lg shadow">
+            <h2 className="text-lg font-semibold p-4 border-b dark:border-gray-700">Tareas pendientes</h2>
             <div className="p-4">
               <UpcomingEvents />
             </div>
           </section>
           
           {/* Recursos recientes - Nueva sección */}
-          <section className="bg-white rounded-lg shadow">
-            <h2 className="text-lg font-semibold p-4 border-b flex justify-between items-center">
+          <section className="bg-white dark:bg-gray-800 rounded-lg shadow">
+            <h2 className="text-lg font-semibold p-4 border-b dark:border-gray-700 flex justify-between items-center">
               <span>Recursos</span>
               <button 
                 onClick={() => router.push('/resources')}
-                className="text-xs text-blue-600 hover:text-blue-800 flex items-center"
+                className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center"
                 title="Ver todos los recursos"
               >
                 <span className="mr-1">Ver todos</span>
