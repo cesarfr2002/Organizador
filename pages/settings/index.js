@@ -5,15 +5,15 @@ import Layout from '../../components/Layout';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useGamification } from '../../context/GamificationContext';
-import { useTheme } from '../../utils/ThemeContext';
 import { toast } from 'react-toastify';
 import { useAutoSchedule } from '../../context/AutoScheduleContext'; // Add this import
+import { useTheme as useNextTheme } from 'next-themes';
 
 export default function Settings() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { gamificationEnabled, toggleGamification } = useGamification();
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme } = useNextTheme();
   const { autoScheduleEnabled, toggleAutoSchedule } = useAutoSchedule(); // Add this line
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [passwordData, setPasswordData] = useState({
