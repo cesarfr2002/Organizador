@@ -19,18 +19,26 @@ export default function Login() {
   // Use useEffect for browser-only code
   useEffect(() => {
     // Now this will only run on the client side
+    console.log('===== LOGIN COMPONENT DIAGNOSTICS =====');
     console.log('Login component loaded');
     console.log('Window location:', window.location.origin);
+    console.log('Full URL:', window.location.href);
     console.log('Router pathname:', router.pathname);
+    console.log('Router query:', router.query);
+    
+    // Browser and environment info for debugging
+    console.log('User agent:', navigator.userAgent);
+    console.log('Browser cookies enabled:', navigator.cookieEnabled);
+    console.log('Document referrer:', document.referrer);
     
     // Add environment variable checks back
-    // These are exposed from next.config.js env property
     console.log('ENV check - NEXTAUTH_URL exists:', !!process.env.NEXTAUTH_URL);
     console.log('ENV check - NEXTAUTH_URL value:', process.env.NEXTAUTH_URL);
     console.log('ENV check - MONGODB_URI exists:', !!process.env.MONGODB_URI);
     console.log('ENV check - DEBUG exists:', !!process.env.DEBUG);
     console.log('ENV check - NEXT_PUBLIC_APP_URL value:', process.env.NEXT_PUBLIC_APP_URL);
-  }, [router.pathname]);
+    console.log('===== END LOGIN DIAGNOSTICS =====');
+  }, [router.pathname, router.query]);
 
   // Redirigir si ya está autenticado
   if (status === 'authenticated') {
@@ -49,31 +57,45 @@ export default function Login() {
     
     if (isLogin) {
       try {
+        console.log('===== LOGIN ATTEMPT DIAGNOSTICS =====');
         console.log('Login attempt started');
-        console.log('Calling signIn method with:', { email: credentials.email, password: '***' });
-        
-        // Use current URL for callback
-        const origin = typeof window !== 'undefined' ? window.location.origin : '';
+        console.log('Form data:', { 
+          email: credentials.email, 
+          password: '***', 
+          passwordLength: credentials.password.length 
+        });
+        console.log('Current pathname:', window.location.pathname);
+        console.log('Current URL:', window.location.href);
         
         const result = await signIn('credentials', {
           redirect: false,
           email: credentials.email,
           password: credentials.password,
-          callbackUrl: origin,
         });
         
-        console.log('SignIn result:', result);
+        console.log('SignIn result full object:', JSON.stringify(result, null, 2));
         console.log('Authentication error:', result?.error);
+        console.log('Authentication successful:', result?.ok);
+        console.log('Callback URL:', result?.url);
+        console.log('===== END LOGIN ATTEMPT DIAGNOSTICS =====');
         
-        if (result.error) {
+        if (result?.error) {
           toast.error(result.error || 'Error al iniciar sesión');
           setLoading(false);
-        } else {
+        } else if (result?.ok) {
           toast.success('Inicio de sesión exitoso');
           router.push('/');
+        } else {
+          toast.error('Error desconocido al iniciar sesión');
+          setLoading(false);
         }
       } catch (error) {
+        console.error('===== LOGIN ERROR DIAGNOSTICS =====');
         console.error('Error during sign in:', error);
+        console.error('Error name:', error.name);
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+        console.error('===== END LOGIN ERROR DIAGNOSTICS =====');
         toast.error('Error al conectar con el servidor de autenticación');
         setLoading(false);
       }
