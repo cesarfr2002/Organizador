@@ -44,18 +44,31 @@ export function AuthProvider({ children }) {
   // Función para iniciar sesión
   const login = async (email, password) => {
     try {
+      console.log('Iniciando solicitud de login a la API personalizada');
+      
       const res = await fetch('/api/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         body: JSON.stringify({ email, password }),
       });
       
+      console.log('Respuesta recibida de la API:', res.status);
+      
       if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || 'Error al iniciar sesión');
+        const errorData = await res.json().catch(() => ({ error: 'Error desconocido' }));
+        throw new Error(errorData.error || 'Error al iniciar sesión');
       }
       
       const data = await res.json();
+      console.log('Datos de usuario recibidos:', !!data.user);
+      
+      if (!data.user) {
+        throw new Error('No se recibieron datos de usuario');
+      }
+      
       setUser(data.user);
       localStorage.setItem('user', JSON.stringify(data.user));
       

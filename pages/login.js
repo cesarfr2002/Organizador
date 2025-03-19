@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import Head from "next/head";
+import { useAuth } from "../context/AuthContext"; // Import useAuth hook
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -9,6 +10,7 @@ export default function Login() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const { login } = useAuth(); // Use the auth context
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -16,31 +18,16 @@ export default function Login() {
     setIsLoading(true);
     
     try {
-      console.log("Intentando iniciar sesión...");
+      console.log("Intentando iniciar sesión con el sistema personalizado...");
       
-      // Usar nuestra API personalizada en lugar de NextAuth
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Error al iniciar sesión');
-      }
+      // Use our login method from the auth context
+      await login(email, password);
       
       console.log("Login exitoso, redirigiendo...");
-      
-      // Guardar información básica del usuario en localStorage para acceso fácil en el cliente
-      localStorage.setItem('user', JSON.stringify(data.user));
-      
-      // Redirigir a dashboard
       router.push("/dashboard");
     } catch (err) {
       console.error("Error de inicio de sesión:", err);
-      setError(err.message || "Ha ocurrido un error. Por favor, intenta nuevamente.");
+      setError(err.message || "Credenciales inválidas. Por favor, intenta nuevamente.");
     } finally {
       setIsLoading(false);
     }
