@@ -6,6 +6,14 @@ import dbConnect from '../../../lib/dbConnect';
 import User from '../../../models/User';
 import bcrypt from 'bcryptjs';
 
+// Debug logs for server-side environment variable availability
+console.log('[NextAuth] Server-side environment check:');
+console.log('- NEXTAUTH_URL exists:', !!process.env.NEXTAUTH_URL);
+console.log('- NEXTAUTH_URL value:', process.env.NEXTAUTH_URL);
+console.log('- MONGODB_URI exists:', !!process.env.MONGODB_URI);
+console.log('- NEXTAUTH_SECRET exists:', !!process.env.NEXTAUTH_SECRET);
+console.log('- URL fallback exists:', !!process.env.URL);
+
 export const authOptions = {
   adapter: MongoDBAdapter(clientPromise), // El adaptador sigue igual
   providers: [

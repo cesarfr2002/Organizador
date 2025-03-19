@@ -16,12 +16,11 @@ export default function Login() {
   const router = useRouter();
   const { status } = useSession();
 
-  // Add these console logs near the beginning of your component
+  // Modified console logs to show useful information without relying on env vars
   console.log('Login component loaded');
-  console.log('ENV check - NEXTAUTH_URL exists:', !!process.env.NEXTAUTH_URL);
-  console.log('ENV check - NEXTAUTH_URL value:', process.env.NEXTAUTH_URL);
-  console.log('ENV check - MONGODB_URI exists:', !!process.env.MONGODB_URI);
-  console.log('ENV check - DEBUG exists:', !!process.env.DEBUG);
+  console.log('Window location:', window.location.origin);
+  console.log('Using NextAuth version:', require('next-auth/package.json').version);
+  console.log('Router pathname:', router.pathname);
 
   // Redirigir si ya está autenticado
   if (status === 'authenticated') {
@@ -46,6 +45,7 @@ export default function Login() {
           redirect: false,
           email: credentials.email,
           password: credentials.password,
+          callbackUrl: `${window.location.origin}`,
         });
         
         console.log('SignIn result:', result);
