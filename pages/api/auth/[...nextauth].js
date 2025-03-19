@@ -124,23 +124,43 @@ export const authOptions = {
       return session;
     },
     async redirect({ url, baseUrl }) {
-      // More robust URL handling to prevent errors
+      console.log('Redirect callback executing');
+      console.log('- Original URL:', url);
+      console.log('- Base URL:', baseUrl);
+      
       try {
-        // If the URL is a relative URL
-        if (url.startsWith("/")) {
-          return `${baseUrl}${url}`;
+        // Handle relative URLs more safely
+        if (url.startsWith('/')) {
+          const result = `${baseUrl}${url}`;
+          console.log('- Returning relative URL with baseUrl:', result);
+          return result;
         }
         
-        // Allow callback URLs on the same origin
-        const urlObj = new URL(url);
-        if (urlObj.origin === baseUrl) {
-          return url;
+        // Safety check - if URL is not valid, return to baseUrl
+        if (!url || url === 'undefined' || url === 'null') {
+          console.log('- Invalid URL detected, returning baseUrl:', baseUrl);
+          return baseUrl;
         }
         
-        // Default to base URL
+        // Try to parse URL safely
+        try {
+          const parsedUrl = new URL(url);
+          // Only allow redirects to the same host
+          if (parsedUrl.origin === new URL(baseUrl).origin) {
+            console.log('- Same origin URL, returning:', url);
+            return url;
+          }
+        } catch (parseError) {
+          console.error('- Error parsing URL:', parseError.message);
+          // If there's an error parsing, return baseUrl
+          return baseUrl;
+        }
+        
+        // Default: return baseUrl for safety
+        console.log('- Returning baseUrl as default:', baseUrl);
         return baseUrl;
       } catch (error) {
-        console.error('Redirect error:', error);
+        console.error('- Redirect callback error:', error);
         return baseUrl;
       }
     }

@@ -64,19 +64,18 @@ export default function Login() {
           password: '***', 
           passwordLength: credentials.password.length 
         });
-        console.log('Current pathname:', window.location.pathname);
-        console.log('Current URL:', window.location.href);
         
+        // Simplified login call without potentially problematic callbackUrl
         const result = await signIn('credentials', {
           redirect: false,
           email: credentials.email,
           password: credentials.password,
+          // Remove callbackUrl to prevent URL construction errors
         });
         
         console.log('SignIn result full object:', JSON.stringify(result, null, 2));
         console.log('Authentication error:', result?.error);
         console.log('Authentication successful:', result?.ok);
-        console.log('Callback URL:', result?.url);
         console.log('===== END LOGIN ATTEMPT DIAGNOSTICS =====');
         
         if (result?.error) {
@@ -84,19 +83,15 @@ export default function Login() {
           setLoading(false);
         } else if (result?.ok) {
           toast.success('Inicio de sesión exitoso');
+          // Use router.push without callback parameters
           router.push('/');
         } else {
           toast.error('Error desconocido al iniciar sesión');
           setLoading(false);
         }
       } catch (error) {
-        console.error('===== LOGIN ERROR DIAGNOSTICS =====');
-        console.error('Error during sign in:', error);
-        console.error('Error name:', error.name);
-        console.error('Error message:', error.message);
-        console.error('Error stack:', error.stack);
-        console.error('===== END LOGIN ERROR DIAGNOSTICS =====');
-        toast.error('Error al conectar con el servidor de autenticación');
+        // ...existing error logging...
+        toast.error('Error al conectar con el servidor de autenticación. Por favor, inténtelo de nuevo.');
         setLoading(false);
       }
     } else {

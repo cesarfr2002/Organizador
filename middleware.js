@@ -45,12 +45,11 @@ export async function middleware(req) {
     // Redirect unauthenticated users to login
     if (!token) {
       console.log('No auth token - redirecting to login');
+      
+      // Create a safe login URL without problematic query parameters
       const loginUrl = new URL('/login', req.url);
-      // Only add callbackUrl if we have a valid URL to return to
-      if (req.url && req.url.startsWith('http')) {
-        loginUrl.searchParams.set('callbackUrl', req.url);
-        console.log('Added callback URL:', req.url);
-      }
+      
+      // Skip adding callback URL as this may be causing issues
       console.log('Redirecting to:', loginUrl.toString());
       console.log('========== END MIDDLEWARE (REDIRECT) ==========');
       return NextResponse.redirect(loginUrl);
