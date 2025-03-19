@@ -1,0 +1,59 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Keep environment variables
+[build.environment]
+  NEXT_PUBLIC_API_URL = "https://uorganizer.netlify.app"
+  NEXTAUTH_URL = "https://uorganizer.netlify.app"
+  NEXTAUTH_SECRET = "57dd7df0034aacd3fec020a220930081d9d3e9318b54c082b55cad978f57c064"
+  NODE_VERSION = "18"
+  DEBUG = "true"
+  
+[functions]
+  # Increase API function processing resources
+  node_bundler = "esbuild"
+  external_node_modules = ["bcryptjs", "mongodb", "jsonwebtoken", "cookie"]
+  included_files = ["lib/**", "models/**"]
+
+# Function-specific settings are defined within the [functions] section
+[functions.api_custom_login]
+  included_files = ["lib/**", "models/**"]
+  memory = 1024
+  timeout = 30
+
+[functions.next_auth]
+  included_files = ["public/**", ".env", ".env.*"]
+  timeout = 30
+
+# Add headers for security and CORS
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    Access-Control-Allow-Origin = "*"
+
+# Ensure all auth routes are properly handled 
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+
+# Handle SPA routing for client-side navigation
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  conditions = {Role = ["admin"]}
+
+# Ensure proper redirects for auth callback
+[[redirects]]
+  from = "/api/auth/*"
+  to = "/.netlify/functions/next_api_auth_:splat"
+  status = 200

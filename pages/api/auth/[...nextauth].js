@@ -1,52 +1,51 @@
-import NextAuth from 'next-auth';
-import CredentialsProvider from 'next-auth/providers/credentials';
-import { MongoDBAdapter } from '@auth/mongodb-adapter'; // Cambiado a la nueva ubicación
-import clientPromise from '../../../lib/mongodb';
-import dbConnect from '../../../lib/dbConnect';
-import User from '../../../models/User';
-import bcrypt from 'bcryptjs';
+import NextAuth from "next-auth";
+import CredentialsProvider from "next-auth/providers/credentials";
+import { MongoDBAdapter } from "@auth/mongodb-adapter";
+import clientPromise from "../../../lib/mongodb";
+import { compare } from "bcryptjs";
+import { connectToDatabase } from "../../../lib/db";
 
-export const authOptions = {
-  adapter: MongoDBAdapter(clientPromise), // El adaptador sigue igual
+export default NextAuth({
+  adapter: MongoDBAdapter(clientPromise),
   providers: [
     CredentialsProvider({
-      name: 'credentials',
+      name: "Credentials",
       credentials: {
         email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" }
+        password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        await dbConnect();
-        
-        // Buscar usuario por email
-        const user = await User.findOne({ email: credentials.email });
-        
+        if (!credentials) return null;
+
+        const { db } = await connectToDatabase();
+        const user = await db.collection("users").findOne({
+          email: credentials.email,
+        });
+
         if (!user) {
-          return null;
+          throw new Error("No user found with this email");
         }
-        
-        // Verificar contraseña
-        const isPasswordMatch = await bcrypt.compare(
+
+        const isValid = await compare(
           credentials.password,
           user.password
         );
-        
-        if (!isPasswordMatch) {
-          return null;
+
+        if (!isValid) {
+          throw new Error("Invalid password");
         }
-        
-        // Devolver objeto de usuario sin la contraseña
+
         return {
           id: user._id.toString(),
           name: user.name,
-          email: user.email
+          email: user.email,
         };
-      }
-    })
+      },
+    }),
   ],
   session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 días
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
     async jwt({ token, user }) {
@@ -61,20 +60,14 @@ export const authOptions = {
       }
       return session;
     },
-    async redirect({ url, baseUrl }) {
-      // Ensure we're always using absolute URLs to avoid 'Invalid URL' errors
-      if (url.startsWith("/")) return `${baseUrl}${url}`
-      // Allow callback URLs on the same origin
-      else if (new URL(url).origin === baseUrl) return url
-      return baseUrl
-    }
   },
   pages: {
-    signIn: '/login',
-    error: '/login',
+    signIn: "/login",
+    error: "/login",
   },
+  // Ensure this is properly set
   secret: process.env.NEXTAUTH_SECRET,
-  debug: process.env.NODE_ENV === 'development',
-};
-
-export default NextAuth(authOptions);
+  // Use absolute URLs
+  // This fixes the "Failed to construct URL" error
+  debug: process.env.NODE_ENV === "development",
+});

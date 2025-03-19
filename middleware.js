@@ -5,10 +5,15 @@ export async function middleware(req) {
   const path = req.nextUrl.pathname
   
   // Public paths that don't require authentication
-  const publicPaths = ['/login', '/api/auth', '/404', '/500']
+  const publicPaths = ['/login', '/api/auth', '/404', '/500', '/manifest.json']
   const isPublicPath = publicPaths.some(publicPath => 
     path === publicPath || path.startsWith(`${publicPath}/`)
   )
+  
+  // Also allow access to static files
+  if (path.includes('/_next/') || path.includes('/favicon.ico') || path.includes('.png')) {
+    return NextResponse.next()
+  }
   
   if (isPublicPath) {
     return NextResponse.next()
@@ -23,9 +28,20 @@ export async function middleware(req) {
   
   // Redirect unauthenticated users to login
   if (!token) {
-    const url = new URL('/login', req.url)
-    url.searchParams.set('callbackUrl', encodeURI(req.url))
-    return NextResponse.redirect(url)
+    // Use a valid URL construction to avoid errors
+    const loginUrl = new URL('/login', req.url)
+    
+    // Make sure the URL is valid before setting search params
+    try {
+      // Only set callback URL if it's a valid URL
+      if (req.url) {
+        loginUrl.searchParams.set('callbackUrl', req.url)
+      }
+      return NextResponse.redirect(loginUrl)
+    } catch (error) {
+      // Fallback if there's an issue with URL construction
+      return NextResponse.redirect(new URL('/login', req.url))
+    }
   }
   
   return NextResponse.next()
