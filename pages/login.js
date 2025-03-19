@@ -33,9 +33,9 @@ export default function Login() {
     
     if (isLogin) {
       try {
-        // Log the base URL to help debugging
-        console.log('Base URL:', window.location.origin);
+        console.log('Attempting sign in with credentials');
         
+        // Simplified signIn call without redirect
         const result = await signIn('credentials', {
           redirect: false,
           email: credentials.email,
@@ -43,22 +43,20 @@ export default function Login() {
         });
         
         if (result?.error) {
-          toast.error(result.error || 'Error al iniciar sesión');
+          toast.error(result.error);
           setLoading(false);
-        } else if (result?.ok) {
-          toast.success('Inicio de sesión exitoso');
-          router.push('/');
         } else {
-          toast.error('Error al conectar con el servidor de autenticación');
-          setLoading(false);
+          toast.success('Inicio de sesión exitoso');
+          // Use window.location for a hard reload to avoid URL construction issues
+          window.location.href = '/';
         }
       } catch (error) {
         console.error('Error during sign in:', error);
-        toast.error(`Error de autenticación: ${error.message || 'Error desconocido'}`);
+        toast.error('Error al iniciar sesión');
         setLoading(false);
       }
     } else {
-      // Registrar nuevo usuario
+      // Registrar nuevo usuario - simplified for better error handling
       try {
         const res = await fetch('/api/auth/register', {
           method: 'POST',
@@ -68,23 +66,31 @@ export default function Login() {
           body: JSON.stringify(credentials),
         });
         
-        const data = await res.json();
-        
-        if (res.ok) {
-          toast.success('Cuenta creada con éxito. Iniciando sesión...');
-          await signIn('credentials', {
-            redirect: false,
-            email: credentials.email,
-            password: credentials.password,
-          });
-          router.push('/');
-        } else {
-          toast.error(data.error || 'Error al crear la cuenta');
-          setLoading(false);
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.error || 'Error al crear la cuenta');
         }
+        
+        toast.success('Cuenta creada con éxito. Iniciando sesión...');
+        
+        // Use setTimeout to allow the toast to show before sign in
+        setTimeout(async () => {
+          try {
+            await signIn('credentials', {
+              redirect: false,
+              email: credentials.email,
+              password: credentials.password,
+            });
+            window.location.href = '/';
+          } catch (signInError) {
+            console.error('Error signing in after registration:', signInError);
+            toast.error('Cuenta creada, pero ocurrió un error al iniciar sesión');
+            setLoading(false);
+          }
+        }, 1500);
       } catch (error) {
         console.error('Error al registrar:', error);
-        toast.error('Error al crear la cuenta');
+        toast.error(error.message || 'Error al crear la cuenta');
         setLoading(false);
       }
     }

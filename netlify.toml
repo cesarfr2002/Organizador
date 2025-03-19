@@ -9,33 +9,22 @@
   NEXT_PUBLIC_API_URL = "https://uorganizer.netlify.app"
   NEXTAUTH_URL = "https://uorganizer.netlify.app"
   NODE_VERSION = "18"
-
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-  force = false
-  conditions = {Role = ["admin"]}
-
+  
 [functions]
-  # Increase timeout for API functions
+  # Increase API function timeout and memory
   node_bundler = "esbuild"
+  external_node_modules = ["bcryptjs", "mongodb"]
+  included_files = ["lib/**", "models/**"]
 
-# Handle 404s
-[[redirects]]
-  from = "/*"
-  to = "/404"
-  status = 404
-
-# Handle API errors
+# Make API routes work correctly
 [[redirects]]
   from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
   status = 200
-  force = false
+  force = true
 
-# Ensure trailing slash consistency
+# All other routes go to Next.js
 [[redirects]]
   from = "/*"
-  to = "/:splat/"
-  status = 301
-  force = false
+  to = "/.netlify/functions/next"
+  status = 200

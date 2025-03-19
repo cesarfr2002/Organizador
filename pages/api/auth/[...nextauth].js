@@ -6,11 +6,6 @@ import dbConnect from '../../../lib/dbConnect';
 import User from '../../../models/User';
 import bcrypt from 'bcryptjs';
 
-// Make sure we have a valid NEXTAUTH_URL
-const BASE_URL = process.env.NEXTAUTH_URL || 
-  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 
-  (process.env.URL ? process.env.URL : 'http://localhost:3000'));
-
 export const authOptions = {
   adapter: MongoDBAdapter(clientPromise),
   providers: [
@@ -21,6 +16,10 @@ export const authOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
+        if (!credentials) {
+          throw new Error('No se proporcionaron credenciales');
+        }
+
         try {
           await dbConnect();
           
@@ -71,34 +70,17 @@ export const authOptions = {
       }
       return session;
     },
+    // Extremely simplified redirect function to avoid URL construction issues
     async redirect({ url, baseUrl }) {
-      try {
-        // Handle relative URLs
-        if (!url || url === '') return baseUrl;
-        if (url.startsWith('/')) return `${baseUrl}${url}`;
-        
-        // Check if URL is valid before creating URL object
-        const urlPattern = /^(https?:\/\/)/;
-        if (!urlPattern.test(url)) return baseUrl;
-        
-        // Allow same-origin URLs
-        const urlObj = new URL(url);
-        const baseUrlObj = new URL(baseUrl);
-        if (urlObj.origin === baseUrlObj.origin) return url;
-        
-        return baseUrl;
-      } catch (error) {
-        console.error('Redirect error:', error);
-        return baseUrl;
-      }
+      return baseUrl;
     }
   },
   pages: {
     signIn: '/login',
-    error: '/auth-error',  // Add a custom error page
+    error: '/auth-error',
   },
   secret: process.env.NEXTAUTH_SECRET,
-  debug: true, // Enable debug mode temporarily to see detailed errors
+  debug: process.env.NODE_ENV === 'development',
 };
 
 export default NextAuth(authOptions);
