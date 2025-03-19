@@ -16,10 +16,9 @@ export default function Login() {
   const router = useRouter();
   const { status } = useSession();
 
-  // Modified console logs to show useful information without relying on env vars
+  // Modified console logs to show useful information without relying on env vars or package imports
   console.log('Login component loaded');
   console.log('Window location:', window.location.origin);
-  console.log('Using NextAuth version:', require('next-auth/package.json').version);
   console.log('Router pathname:', router.pathname);
 
   // Redirigir si ya está autenticado
