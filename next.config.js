@@ -1,21 +1,24 @@
 /** @type {import('next').NextConfig} */
-module.exports = {
-  reactStrictMode: true,
+const nextConfig = {
+  reactStrictMode: false, // Cambiamos a false para evitar dobles renderizados
   swcMinify: true,
   images: {
-    unoptimized: true,
+    unoptimized: true, // Necesario para Netlify
   },
-  // Asegurar que las rutas API funcionen correctamente
+  env: {
+    MONGODB_URI: process.env.MONGODB_URI,
+    NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
+    NEXTAUTH_URL: process.env.NEXTAUTH_URL || "https://uorganizer.netlify.app",
+  },
+  // Asegúrate de que la API funcione correctamente
   async rewrites() {
     return [
-      {
-        source: '/api/auth/:path*',
-        destination: '/api/auth/:path*',
-      },
       {
         source: '/api/:path*',
         destination: '/api/:path*',
       },
-    ]
+    ];
   },
 }
+
+module.exports = nextConfig;

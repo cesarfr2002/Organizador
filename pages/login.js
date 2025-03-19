@@ -17,22 +17,24 @@ export default function Login() {
     setIsLoading(true);
     
     try {
+      console.log("Intentando iniciar sesión...");
       const result = await signIn("credentials", {
         redirect: false,
         email,
         password,
       });
+      
+      console.log("Resultado del inicio de sesión:", result);
 
-      if (result?.error) {
+      if (!result || result.error) {
         setError("Credenciales inválidas. Intenta nuevamente.");
       } else {
-        // Redirigir al dashboard o a la página solicitada
-        const callbackUrl = router.query?.callbackUrl || "/dashboard";
-        router.push(callbackUrl);
+        console.log("Login exitoso, redirigiendo...");
+        router.push("/dashboard");
       }
     } catch (err) {
       console.error("Error de inicio de sesión:", err);
-      setError("Ha ocurrido un error al intentar iniciar sesión. Intenta nuevamente.");
+      setError("Ha ocurrido un error: " + (err.message || "Error desconocido"));
     } finally {
       setIsLoading(false);
     }
@@ -69,6 +71,7 @@ export default function Login() {
                 id="email"
                 name="email"
                 type="email"
+                autoComplete="email"
                 required
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
                 placeholder="tucorreo@ejemplo.com"
@@ -85,6 +88,7 @@ export default function Login() {
                 id="password"
                 name="password"
                 type="password"
+                autoComplete="current-password"
                 required
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
                 placeholder="••••••••"
