@@ -14,21 +14,24 @@
   DEBUG = "true"
   
 [functions]
-  # Increase function timeout to 30 seconds (default is 10)
-  timeout = 30
+  # Increase API function processing resources
   node_bundler = "esbuild"
   external_node_modules = ["bcryptjs", "mongodb", "jsonwebtoken", "cookie"]
   included_files = ["lib/**", "models/**"]
-  
-# Function-specific settings
-[functions.api_custom-login]
-  # Give more resources to the login function
-  memory = 1024
-  timeout = 30
 
-# Add function log settings
-[functions.next_auth]
+# Function-specific settings
+[[functions]]
+  # Target the login function specifically
+  pattern = "api/custom-login"
+  included_files = ["lib/**", "models/**"]
+  memory_size = 1024
+  timeout_seconds = 30
+
+# For NextAuth functions
+[[functions]]
+  pattern = "api/auth/*"
   included_files = ["public/**", ".env", ".env.*"]
+  timeout_seconds = 30
 
 # Add headers for security and CORS
 [[headers]]
