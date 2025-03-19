@@ -1,10 +1,11 @@
 [build]
-  command = "npm run build"
+  command = "echo 'Environment check:' && env | grep -E 'NEXT|MONGO|AUTH' && npm run build"
   publish = ".next"
 
 [build.environment]
-  NETLIFY_NEXT_PLUGIN_SKIP = "true"
+  NETLIFY_NEXT_PLUGIN_SKIP = "false"
   NODE_VERSION = "18"
+  NEXT_USE_NETLIFY_EDGE = "true"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
