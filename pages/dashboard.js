@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
@@ -11,25 +10,34 @@ import { es } from 'date-fns/locale';
 import { toast } from 'react-toastify';
 
 export default function Dashboard() {
-  const { data: session, status } = useSession();
   const router = useRouter();
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [upcomingTasks, setUpcomingTasks] = useState([]);
   const [overdueCount, setOverdueCount] = useState(0);
   const [todayCount, setTodayCount] = useState(0);
   const [upcomingEvents, setUpcomingEvents] = useState([]);
   const [subjects, setSubjects] = useState([]);
-  const [loading, setLoading] = useState(true);
 
+  // Check authentication status
   useEffect(() => {
-    if (status === 'unauthenticated') {
+    const storedUser = localStorage.getItem('user');
+    if (!storedUser) {
       router.push('/login');
       return;
     }
-
-    if (status === 'authenticated') {
-      fetchData();
+    
+    try {
+      const userData = JSON.parse(storedUser);
+      setUser(userData);
+    } catch (error) {
+      console.error('Error parsing user data:', error);
+      localStorage.removeItem('user');
+      router.push('/login');
+    } finally {
+      setLoading(false);
     }
-  }, [status, router]);
+  }, [router]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -79,7 +87,7 @@ export default function Dashboard() {
       });
     };
     
-    if (status === 'authenticated') {
+    if (user) {
       checkWelcome();
       
       // También podemos verificar las tareas pendientes en el dashboard
@@ -110,7 +118,12 @@ export default function Dashboard() {
       // Ejecutar verificación de tareas con un pequeño retraso
       setTimeout(verifyTasks, 3000);
     }
-  }, [status]);
+  }, [user]);
+
+  // If still loading or no user, show loading state
+  if (loading || !user) {
+    return <div className="flex justify-center items-center min-h-screen">Cargando...</div>
+  }
 
   return (
     <Layout>

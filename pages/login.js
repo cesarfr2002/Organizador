@@ -1,7 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
-import { signIn } from 'next-auth/react';
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
@@ -14,6 +13,14 @@ export default function Login() {
   const [error, setError] = useState('');
   const router = useRouter();
 
+  // Check if user is already logged in
+  useEffect(() => {
+    const user = localStorage.getItem('user');
+    if (user) {
+      router.push('/dashboard');
+    }
+  }, [router]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setCredentials(prev => ({ ...prev, [name]: value }));
@@ -25,36 +32,31 @@ export default function Login() {
     setError('');
     
     try {
-      // Try NextAuth first
-      const result = await signIn('credentials', {
-        redirect: false,
-        email: credentials.email,
-        password: credentials.password,
+      // Only use our custom API, avoid NextAuth entirely
+      const response = await fetch('/api/custom-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: credentials.email,
+          password: credentials.password,
+        }),
       });
       
-      if (result?.error) {
-        // If NextAuth fails, try our custom API
-        const response = await fetch('/api/custom-login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: credentials.email,
-            password: credentials.password,
-          }),
-        });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-          throw new Error(data.message || 'Error al iniciar sesión');
-        }
-        
-        // Store user data in localStorage
-        localStorage.setItem('user', JSON.stringify(data.user));
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Error al iniciar sesión');
+      }
+      
+      // Store user data in localStorage
+      localStorage.setItem('user', JSON.stringify(data.user));
+      
+      // Navigate with router.push first, and if that fails, fall back to window.location
+      try {
+        await router.push('/dashboard');
+      } catch (err) {
+        console.log('Router navigation failed, using window.location');
         window.location.href = '/dashboard';
-      } else {
-        // NextAuth login worked
-        router.push('/dashboard');
       }
     } catch (error) {
       console.error('Login error:', error);

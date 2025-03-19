@@ -38,7 +38,10 @@ export default async function handler(req, res) {
       email: user.email
     };
 
-    // Return success with user data (no token or cookie)
+    // Set a simple session cookie that doesn't require jsonwebtoken
+    res.setHeader('Set-Cookie', `auth_session=${Buffer.from(JSON.stringify(userData)).toString('base64')}; Path=/; HttpOnly; SameSite=Lax; ${process.env.NODE_ENV === 'production' ? 'Secure;' : ''} Max-Age=${60 * 60 * 24 * 30}`);
+
+    // Return success with user data
     res.status(200).json({ success: true, user: userData });
   } catch (error) {
     console.error('Login error:', error);
