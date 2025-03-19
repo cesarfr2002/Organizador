@@ -1,9 +1,6 @@
 import { useState } from 'react';
-import { signIn, useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
-import Link from 'next/link';
 import Head from 'next/head';
-import { toast } from 'react-toastify';
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
@@ -15,13 +12,6 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
-  const { status } = useSession();
-
-  // Redirect if already authenticated
-  if (status === 'authenticated') {
-    router.push('/');
-    return null;
-  }
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -34,28 +24,31 @@ export default function Login() {
     setError('');
     
     try {
-      // Simplified login with minimal parameters
-      const result = await signIn('credentials', {
-        redirect: false,  // Don't redirect automatically
-        email: credentials.email,
-        password: credentials.password
+      // Use our custom login endpoint instead of NextAuth
+      const response = await fetch('/api/custom-login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: credentials.email,
+          password: credentials.password,
+        }),
       });
       
-      console.log("Sign in result:", result);
+      const data = await response.json();
       
-      if (result?.error) {
-        setError(result.error);
-        setLoading(false);
-      } else if (result?.ok) {
-        // On success, use simple client-side navigation
-        router.push('/dashboard');
-      } else {
-        setError('Error desconocido al iniciar sesión');
-        setLoading(false);
+      if (!response.ok) {
+        throw new Error(data.message || 'Error al iniciar sesión');
       }
+      
+      // On successful login
+      localStorage.setItem('user', JSON.stringify(data.user));
+      router.push('/dashboard');
     } catch (error) {
       console.error('Login error:', error);
-      setError(`Error al iniciar sesión: ${error.message}`);
+      setError(error.message || 'Error al iniciar sesión');
+    } finally {
       setLoading(false);
     }
   };

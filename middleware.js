@@ -1,75 +1,50 @@
-import { NextResponse } from 'next/server'
-import { getToken } from 'next-auth/jwt'
+import { NextResponse } from 'next/server';
+import { verify } from 'jsonwebtoken';
 
 export async function middleware(req) {
-  const path = req.nextUrl.pathname
-  
-  // More comprehensive public paths
-  const publicPaths = [
-    '/login', 
-    '/api/auth', 
-    '/auth-error',
-    '/404', 
-    '/500',
-    '/_next',
-    '/favicon.ico',
-    '/images',
-  ]
-  
-  const isPublicPath = publicPaths.some(publicPath => 
-    path === publicPath || path.startsWith(`${publicPath}/`)
-  )
-  
-  if (isPublicPath) {
-    return NextResponse.next()
+  // Get path
+  const path = req.nextUrl.pathname;
+
+  // If it's one of the public paths, allow access
+  if (path === '/login' || path === '/api/custom-login' || path.startsWith('/_next') || path.startsWith('/static')) {
+    return NextResponse.next();
   }
-  
+
+  // Check for auth token
+  const authToken = req.cookies.get('auth_token')?.value;
+
+  // If no token and not on login page, redirect to login
+  if (!authToken) {
+    return NextResponse.redirect(new URL('/login', req.url));
+  }
+
   try {
-    // Check if the user is authenticated
-    const token = await getToken({ 
-      req, 
-      secret: process.env.NEXTAUTH_SECRET,
-      secureCookie: process.env.NODE_ENV === 'production'
-    })
+    // Verify token
+    verify(
+      authToken,
+      process.env.NEXTAUTH_SECRET || '57dd7df0034aacd3fec020a220930081d9d3e9318b54c082b55cad978f57c064'
+    );
     
-    // Redirect unauthenticated users to login
-    if (!token) {
-      // Safely construct the redirect URL
-      let redirectUrl;
-      try {
-        const baseUrl = req.nextUrl.origin || process.env.NEXTAUTH_URL || 'http://localhost:3000';
-        redirectUrl = new URL('/login', baseUrl);
-        // Only add callbackUrl if we have a valid origin
-        if (req.nextUrl.origin) {
-          redirectUrl.searchParams.set('callbackUrl', encodeURI(req.url));
-        }
-      } catch (error) {
-        console.error('Error creating redirect URL:', error);
-        redirectUrl = new URL('/login', 'http://localhost:3000');
-      }
-      
-      return NextResponse.redirect(redirectUrl);
-    }
-    
+    // Token is valid, continue
     return NextResponse.next();
   } catch (error) {
-    console.error('Middleware error:', error);
-    // In case of an error, allow the request to proceed and let the application handle it
-    return NextResponse.next();
+    console.error('Invalid token:', error);
+    // Invalid token, redirect to login
+    return NextResponse.redirect(new URL('/login', req.url));
   }
 }
 
-// Specify which paths middleware should run on
+// See: https://nextjs.org/docs/advanced-features/middleware
 export const config = {
   matcher: [
     /*
-     * Match all request paths except for:
-     * 1. /api/auth/* (auth endpoints)
-     * 2. /_next/* (Next.js internals)
-     * 3. /fonts/* (static font files)
-     * 4. /images/* (static image files)
-     * 5. /favicon.ico, /logo.png, etc. (static files)
+     * Match all paths except for:
+     * 1. /api routes
+     * 2. /_next (Next.js internals)
+     * 3. /fonts (inside /public)
+     * 4. /images (inside /public)
+     * 5. /favicon.ico, /manifest.json (inside /public)
      */
-    '/((?!api/auth|_next/static|_next/image|favicon.ico|.*\\.png$|fonts|images).*)',
+    '/((?!api|_next|fonts|images|favicon.ico|manifest.json).*)',
   ],
-}
+};
