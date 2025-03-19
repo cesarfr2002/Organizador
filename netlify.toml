@@ -9,10 +9,16 @@
 [build.environment]
   NEXT_PUBLIC_API_URL = "https://uorganizer.netlify.app"
   NEXTAUTH_URL = "https://uorganizer.netlify.app"
+  NEXTAUTH_SECRET = "57dd7df0034aacd3fec020a220930081d9d3e9318b54c082b55cad978f57c064"
   NODE_VERSION = "18"
+  DEBUG = "true"
   
 [functions]
   # Increase API function timeout and memory
   node_bundler = "esbuild"
   external_node_modules = ["bcryptjs", "mongodb"]
   included_files = ["lib/**", "models/**"]
+  
+# Add function log settings
+[functions.next_auth]
+  included_files = ["public/**", ".env", ".env.*"]

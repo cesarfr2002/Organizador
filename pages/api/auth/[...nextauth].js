@@ -6,11 +6,8 @@ import dbConnect from '../../../lib/dbConnect';
 import User from '../../../models/User';
 import bcrypt from 'bcryptjs';
 
-// Hard-coded base URL - this can be more reliable than environment variables in Netlify
-const BASE_URL = 'https://uorganizer.netlify.app';
-
-// Enable debugging for troubleshooting
-const debug = process.env.NODE_ENV === 'development' || process.env.DEBUG === 'true';
+// Enable debugging
+const debug = true;
 
 export const authOptions = {
   adapter: MongoDBAdapter(clientPromise),
@@ -59,8 +56,6 @@ export const authOptions = {
       }
     })
   ],
-  // Define the base URL directly in the NextAuth config
-  url: BASE_URL,
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 días
@@ -79,30 +74,25 @@ export const authOptions = {
       return session;
     },
     
-    // Simplified redirect callback with hard-coded URL
-    async redirect({ url }) {
-      // If URL is relative, append to base URL
-      if (url.startsWith('/')) {
-        return `${BASE_URL}${url}`;
+    // Extremely simplified redirect callback that avoids any URL construction
+    async redirect({ url, baseUrl }) {
+      // For safety, hardcode the URLs
+      if (url.startsWith('/dashboard')) {
+        return '/dashboard'; 
       }
-      
-      // If URL is already the full site URL, use it
-      if (url.startsWith(BASE_URL)) {
-        return url;
+      if (url.startsWith('/login')) {
+        return '/login';
       }
-      
-      // Default fallback to base URL
-      return BASE_URL;
+      // Default to dashboard
+      return '/dashboard';
     }
   },
   pages: {
     signIn: '/login',
     error: '/auth-error',
   },
-  // Use hard-coded secret if environment variable isn't available
   secret: process.env.NEXTAUTH_SECRET || '57dd7df0034aacd3fec020a220930081d9d3e9318b54c082b55cad978f57c064',
-  debug,
-  // Add logger for better debugging in production
+  debug: true, // Always enable debug for troubleshooting
   logger: {
     error(code, metadata) {
       console.error(`[auth] Error: ${code}`, metadata);
@@ -111,23 +101,25 @@ export const authOptions = {
       console.warn(`[auth] Warning: ${code}`);
     },
     debug(code, metadata) {
-      if (debug) {
-        console.log(`[auth] Debug: ${code}`, metadata);
-      }
+      // Always log debug info
+      console.log(`[auth] Debug: ${code}`, metadata);
     }
   },
 };
 
-// Create our custom handler without trying to set environment variables
+// Create our custom handler without URL/env manipulation
 const authHandler = async (req, res) => {
   try {
-    // Don't try to modify environment variables here
+    console.log("Auth request URL:", req.url);
+    
     return await NextAuth(req, res, authOptions);
   } catch (error) {
     console.error("NextAuth error:", error);
+    // Return a more detailed error response
     return res.status(500).json({ 
       error: "Internal server error during authentication", 
-      message: error.message 
+      message: error.message,
+      stack: debug ? error.stack : undefined
     });
   }
 };

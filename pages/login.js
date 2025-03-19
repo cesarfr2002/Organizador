@@ -13,12 +13,11 @@ export default function Login() {
     password: ''
   });
   const [loading, setLoading] = useState(false);
-  // Add the missing error state
   const [error, setError] = useState('');
   const router = useRouter();
   const { status } = useSession();
 
-  // Redirigir si ya está autenticado
+  // Redirect if already authenticated
   if (status === 'authenticated') {
     router.push('/');
     return null;
@@ -35,23 +34,28 @@ export default function Login() {
     setError('');
     
     try {
-      // Use the callbackUrl parameter with a relative path to avoid URL construction issues
+      // Simplified login with minimal parameters
       const result = await signIn('credentials', {
-        redirect: false,
+        redirect: false,  // Don't redirect automatically
         email: credentials.email,
-        password: credentials.password,
+        password: credentials.password
       });
+      
+      console.log("Sign in result:", result);
       
       if (result?.error) {
         setError(result.error);
+        setLoading(false);
+      } else if (result?.ok) {
+        // On success, use simple client-side navigation
+        router.push('/dashboard');
       } else {
-        // Use window.location for navigation to avoid any routing issues
-        window.location.href = '/dashboard';
+        setError('Error desconocido al iniciar sesión');
+        setLoading(false);
       }
     } catch (error) {
       console.error('Login error:', error);
-      setError('Error al iniciar sesión. Por favor intente de nuevo.');
-    } finally {
+      setError(`Error al iniciar sesión: ${error.message}`);
       setLoading(false);
     }
   };
