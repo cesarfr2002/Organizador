@@ -13,6 +13,8 @@ export default function Login() {
     password: ''
   });
   const [loading, setLoading] = useState(false);
+  // Add the missing error state
+  const [error, setError] = useState('');
   const router = useRouter();
   const { status } = useSession();
 
@@ -70,6 +72,13 @@ export default function Login() {
             {isLogin ? 'Inicia sesión en tu cuenta' : 'Crea una nueva cuenta'}
           </h2>
         </div>
+        
+        {/* Display error message if present */}
+        {error && (
+          <div className="p-3 bg-red-50 text-red-600 border border-red-200 rounded">
+            {error}
+          </div>
+        )}
         
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {!isLogin && (
