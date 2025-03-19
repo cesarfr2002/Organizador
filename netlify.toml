@@ -5,6 +5,24 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
+# Handle API routes properly
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+
+# Ensure NextAuth callbacks work properly
+[[redirects]]
+  from = "/api/auth/*"
+  to = "/.netlify/functions/next_api_auth_:splat"
+  status = 200
+
+# Default redirect for SPAs
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
 [build.environment]
   NEXT_PUBLIC_API_URL = "https://uorganizer.netlify.app"
   NEXTAUTH_URL = "https://uorganizer.netlify.app"
