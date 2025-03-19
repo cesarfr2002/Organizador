@@ -14,11 +14,18 @@
   DEBUG = "true"
   
 [functions]
-  # Increase API function timeout and memory
+  # Increase function timeout to 30 seconds (default is 10)
+  timeout = 30
   node_bundler = "esbuild"
   external_node_modules = ["bcryptjs", "mongodb", "jsonwebtoken", "cookie"]
   included_files = ["lib/**", "models/**"]
   
+# Function-specific settings
+[functions.api_custom-login]
+  # Give more resources to the login function
+  memory = 1024
+  timeout = 30
+
 # Add function log settings
 [functions.next_auth]
   included_files = ["public/**", ".env", ".env.*"]
@@ -31,3 +38,4 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    Access-Control-Allow-Origin = "*"

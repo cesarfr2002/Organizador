@@ -31,10 +31,15 @@ export default function Login() {
     setLoading(true);
     setError('');
     
+    // Set a client-side timeout as well
+    const timeoutId = setTimeout(() => {
+      setError('La conexión está tomando más tiempo de lo esperado. Por favor intenta de nuevo.');
+      setLoading(false);
+    }, 15000);
+    
     try {
       console.log('Sending login request...');
       
-      // Only use our custom API
       const response = await fetch('/api/custom-login', {
         method: 'POST',
         headers: { 
@@ -45,6 +50,13 @@ export default function Login() {
           password: credentials.password,
         }),
       });
+      
+      clearTimeout(timeoutId); // Clear the timeout since we got a response
+      
+      // Handle server timeout error returned as a response
+      if (response.status === 502 || response.status === 504) {
+        throw new Error('El servidor está tardando demasiado en responder. Por favor intenta más tarde.');
+      }
       
       const data = await response.json();
       console.log('Login response:', data);
@@ -63,9 +75,11 @@ export default function Login() {
       // Use simpler navigation
       window.location.href = '/dashboard';
     } catch (error) {
+      clearTimeout(timeoutId); // Make sure timeout is cleared if there's an error
       console.error('Login error:', error);
       setError(error.message || 'Error al iniciar sesión');
     } finally {
+      clearTimeout(timeoutId); // Extra safety to ensure the timeout is cleared
       setLoading(false);
     }
   };
