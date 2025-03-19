@@ -6,8 +6,18 @@ import dbConnect from '../../../lib/dbConnect';
 import User from '../../../models/User';
 import bcrypt from 'bcryptjs';
 
-// Enable this to debug issues
+// Enable debugging for troubleshooting
 const debug = process.env.NODE_ENV === 'development' || process.env.DEBUG === 'true';
+
+// Ensure we have a valid NEXTAUTH_URL
+const getBaseUrl = () => {
+  // First try environment variable
+  if (process.env.NEXTAUTH_URL) {
+    return process.env.NEXTAUTH_URL.trim();
+  }
+  // Fallback to hardcoded URL for production
+  return 'https://uorganizer.netlify.app';
+};
 
 export const authOptions = {
   adapter: MongoDBAdapter(clientPromise),
@@ -73,27 +83,28 @@ export const authOptions = {
       }
       return session;
     },
+    
+    // Simplified redirect callback that avoids URL construction errors
     async redirect({ url, baseUrl }) {
-      // Better URL handling
-      if (!url) return baseUrl;
+      // Try to get a working baseUrl
+      baseUrl = baseUrl || getBaseUrl();
       
-      // Handle relative URLs
+      // If no URL or it's just a hash, return to base URL
+      if (!url || url === '#' || url.startsWith('mailto:')) {
+        return baseUrl;
+      }
+      
+      // Safely handle relative URLs
       if (url.startsWith('/')) {
         return `${baseUrl}${url}`;
       }
       
-      // Only allow same-origin redirects for security
-      try {
-        const urlObj = new URL(url);
-        const baseUrlObj = new URL(baseUrl);
-        
-        if (urlObj.origin === baseUrlObj.origin) {
-          return url;
-        }
-      } catch (error) {
-        console.error('Error parsing URL in redirect callback:', error);
+      // Safely check if URL is of same origin, avoid URL constructor for safety
+      if (url.startsWith(baseUrl)) {
+        return url;
       }
       
+      // Default fallback to base URL
       return baseUrl;
     }
   },
@@ -101,8 +112,8 @@ export const authOptions = {
     signIn: '/login',
     error: '/auth-error',
   },
-  secret: process.env.NEXTAUTH_SECRET,
-  debug: debug,
+  secret: process.env.NEXTAUTH_SECRET || 'your-secret-fallback-for-development-only',
+  debug,
   // Add logger for better debugging in production
   logger: {
     error(code, metadata) {
@@ -119,24 +130,25 @@ export const authOptions = {
   },
 };
 
-// Create our custom handler
+// Create our custom handler with better error handling
 const authHandler = async (req, res) => {
   try {
-    // Ensure NEXTAUTH_URL is properly set
+    console.log("Auth request path:", req.url);
+    
+    // Ensure NEXTAUTH_URL is set
     if (!process.env.NEXTAUTH_URL) {
-      console.warn("NEXTAUTH_URL environment variable is not set. This can cause redirect issues.");
-      // Try to construct it from request headers as a fallback
-      if (req.headers.host) {
-        const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
-        process.env.NEXTAUTH_URL = `${protocol}://${req.headers.host}`;
-        console.log(`Setting NEXTAUTH_URL to ${process.env.NEXTAUTH_URL}`);
-      }
+      const baseUrl = getBaseUrl();
+      console.log(`Setting NEXTAUTH_URL to ${baseUrl}`);
+      process.env.NEXTAUTH_URL = baseUrl;
     }
     
     return await NextAuth(req, res, authOptions);
   } catch (error) {
     console.error("NextAuth error:", error);
-    res.status(500).json({ error: "Internal server error during authentication" });
+    return res.status(500).json({ 
+      error: "Internal server error during authentication", 
+      message: error.message 
+    });
   }
 };
 

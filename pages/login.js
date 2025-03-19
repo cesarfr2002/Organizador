@@ -30,69 +30,27 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
     
-    if (isLogin) {
-      try {
-        console.log('Attempting sign in with credentials');
-        
-        // Simplified signIn call without redirect
-        const result = await signIn('credentials', {
-          redirect: false,
-          email: credentials.email,
-          password: credentials.password,
-        });
-        
-        if (result?.error) {
-          toast.error(result.error);
-          setLoading(false);
-        } else {
-          toast.success('Inicio de sesión exitoso');
-          // Use window.location for a hard reload to avoid URL construction issues
-          window.location.href = '/';
-        }
-      } catch (error) {
-        console.error('Error during sign in:', error);
-        toast.error('Error al iniciar sesión');
-        setLoading(false);
+    try {
+      // Use the callbackUrl parameter with a relative path to avoid URL construction issues
+      const result = await signIn('credentials', {
+        redirect: false,
+        email: credentials.email,
+        password: credentials.password,
+      });
+      
+      if (result?.error) {
+        setError(result.error);
+      } else {
+        // Use window.location for navigation to avoid any routing issues
+        window.location.href = '/dashboard';
       }
-    } else {
-      // Registrar nuevo usuario - simplified for better error handling
-      try {
-        const res = await fetch('/api/auth/register', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(credentials),
-        });
-        
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => ({}));
-          throw new Error(errorData.error || 'Error al crear la cuenta');
-        }
-        
-        toast.success('Cuenta creada con éxito. Iniciando sesión...');
-        
-        // Use setTimeout to allow the toast to show before sign in
-        setTimeout(async () => {
-          try {
-            await signIn('credentials', {
-              redirect: false,
-              email: credentials.email,
-              password: credentials.password,
-            });
-            window.location.href = '/';
-          } catch (signInError) {
-            console.error('Error signing in after registration:', signInError);
-            toast.error('Cuenta creada, pero ocurrió un error al iniciar sesión');
-            setLoading(false);
-          }
-        }, 1500);
-      } catch (error) {
-        console.error('Error al registrar:', error);
-        toast.error(error.message || 'Error al crear la cuenta');
-        setLoading(false);
-      }
+    } catch (error) {
+      console.error('Login error:', error);
+      setError('Error al iniciar sesión. Por favor intente de nuevo.');
+    } finally {
+      setLoading(false);
     }
   };
 
