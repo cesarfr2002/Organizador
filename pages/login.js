@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { signIn, useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
@@ -16,10 +16,13 @@ export default function Login() {
   const router = useRouter();
   const { status } = useSession();
 
-  // Modified console logs to show useful information without relying on env vars or package imports
-  console.log('Login component loaded');
-  console.log('Window location:', window.location.origin);
-  console.log('Router pathname:', router.pathname);
+  // Use useEffect for browser-only code
+  useEffect(() => {
+    // Now this will only run on the client side
+    console.log('Login component loaded');
+    console.log('Window location:', window.location.origin);
+    console.log('Router pathname:', router.pathname);
+  }, [router.pathname]);
 
   // Redirigir si ya está autenticado
   if (status === 'authenticated') {
@@ -40,11 +43,15 @@ export default function Login() {
       try {
         console.log('Login attempt started');
         console.log('Calling signIn method with:', { email: credentials.email, password: '***' });
+        
+        // Use current URL for callback
+        const origin = typeof window !== 'undefined' ? window.location.origin : '';
+        
         const result = await signIn('credentials', {
           redirect: false,
           email: credentials.email,
           password: credentials.password,
-          callbackUrl: `${window.location.origin}`,
+          callbackUrl: origin,
         });
         
         console.log('SignIn result:', result);
