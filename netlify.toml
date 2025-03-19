@@ -16,15 +16,5 @@
   external_node_modules = ["bcryptjs", "mongodb"]
   included_files = ["lib/**", "models/**"]
 
-# Make API routes work correctly
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/api/:splat"
-  status = 200
-  force = true
-
-# All other routes go to Next.js
-[[redirects]]
-  from = "/*"
-  to = "/.netlify/functions/next"
-  status = 200
+# Remove the redirects that might be causing conflicts with Next.js API routes
+# Let the Next.js plugin handle the routing properly

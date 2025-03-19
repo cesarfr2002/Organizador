@@ -1,7 +1,7 @@
 import { SessionProvider } from 'next-auth/react';
 import { ThemeProvider } from 'next-themes';
 import { NotificationProvider } from '../context/NotificationContext';
-import { useEffect } from 'react';
+import { useEffect, Component } from 'react';
 import 'tailwindcss/tailwind.css';
 import '@tailwindcss/typography'; // Asegúrate de que esto esté instalado y configurado
 import 'react-toastify/dist/ReactToastify.css';
@@ -12,25 +12,45 @@ import RewardNotification from '../components/RewardNotification';
 import GamificationStatus from '../components/GamificationStatus';
 import { ToastContainer } from 'react-toastify';
 import { AutoScheduleProvider } from '../context/AutoScheduleContext';
-import { ErrorBoundary } from 'react-error-boundary';
 
-function ErrorFallback({ error }) {
-  console.error('Application error:', error);
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
-      <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full text-center">
-        <h2 className="text-2xl font-semibold text-red-600 mb-4">Algo salió mal</h2>
-        <p className="text-gray-700 mb-4">Lo sentimos, ha ocurrido un error inesperado.</p>
-        <p className="text-sm text-gray-500 mb-4">Detalles técnicos: {error.message}</p>
-        <button
-          onClick={() => window.location.href = '/'}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
-          Volver al inicio
-        </button>
-      </div>
-    </div>
-  );
+// Custom error boundary component
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('Application error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+          <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full text-center">
+            <h2 className="text-2xl font-semibold text-red-600 mb-4">Algo salió mal</h2>
+            <p className="text-gray-700 mb-4">Lo sentimos, ha ocurrido un error inesperado.</p>
+            <p className="text-sm text-gray-500 mb-4">
+              Detalles técnicos: {this.state.error?.message || 'Error desconocido'}
+            </p>
+            <button
+              onClick={() => window.location.href = '/'}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Volver al inicio
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
 }
 
 function MyApp({ Component, pageProps: { session, ...pageProps } }) {
@@ -51,7 +71,7 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }) {
   }, []);
 
   return (
-    <ErrorBoundary FallbackComponent={ErrorFallback}>
+    <ErrorBoundary>
       <SessionProvider session={session}>
         <GamificationProvider>
           <ThemeProvider attribute="class">
