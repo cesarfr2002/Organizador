@@ -1,12 +1,10 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { MongoDBAdapter } from "@auth/mongodb-adapter";
-import clientPromise from "../../../lib/mongodb";
 import { compare } from "bcryptjs";
 import { connectToDatabase } from "../../../lib/db";
 
+// Implementación mínima de NextAuth sin MongoDB Adapter para empezar
 export default NextAuth({
-  adapter: MongoDBAdapter(clientPromise),
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -24,7 +22,7 @@ export default NextAuth({
           });
 
           if (!user) {
-            throw new Error("No user found with this email");
+            return null;
           }
 
           const isValid = await compare(
@@ -33,7 +31,7 @@ export default NextAuth({
           );
 
           if (!isValid) {
-            throw new Error("Invalid password");
+            return null;
           }
 
           return {
@@ -68,10 +66,7 @@ export default NextAuth({
   },
   pages: {
     signIn: "/login",
-    error: "/login",
   },
-  // Ensure these are properly set for Netlify environment
   secret: process.env.NEXTAUTH_SECRET,
-  debug: true, // Set to true to help debug auth issues in production
-  trustHost: true, // Important for Netlify hosting
+  debug: true,
 });

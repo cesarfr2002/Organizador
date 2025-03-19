@@ -1,0 +1,2 @@
+# Este archivo previene que GitHub Pages (o Netlify) use Jekyll
+# Esto puede ayudar con archivos que comienzan con guión bajo (_redirects, etc)

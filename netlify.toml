@@ -7,50 +7,26 @@
 
 # Keep environment variables
 [build.environment]
-  NEXT_PUBLIC_API_URL = "https://uorganizer.netlify.app"
   NEXTAUTH_URL = "https://uorganizer.netlify.app"
   NEXTAUTH_SECRET = "57dd7df0034aacd3fec020a220930081d9d3e9318b54c082b55cad978f57c064"
   NODE_VERSION = "18"
-  DEBUG = "true"
-  
+
+# Simplify function settings to the minimum required
 [functions]
-  # Increase API function processing resources
   node_bundler = "esbuild"
-  external_node_modules = ["bcryptjs", "mongodb", "jsonwebtoken", "cookie"]
-  included_files = ["lib/**/*", "models/**/*"]
+  external_node_modules = ["bcryptjs", "mongodb"]
 
-# Add headers for security and CORS
-[[headers]]
-  for = "/*"
-  [headers.values]
-    X-Frame-Options = "DENY"
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"
-    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
-    Access-Control-Allow-Origin = "*"
-
-# IMPORTANT: Add manifest.json handling
-[[redirects]]
-  from = "/manifest.json"
-  to = "/manifest.json"
-  status = 200
-
-# Ensure API routes are handled properly
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/api/:splat"
-  status = 200
-  force = true
-
-# Fix auth callbacks - make sure this route is precise
-[[redirects]]
-  from = "/api/auth/*"
-  to = "/.netlify/functions/next_api_auth_:splat"
-  status = 200
-  force = true
-
-# Handle SPA routing for client-side navigation - make sure this is last
+# Simple redirect configuration
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+  force = false
+  conditions = {Next-Auth = false}
+
+# This ensures /api/auth routes are properly handled
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+  force = true
