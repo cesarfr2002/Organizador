@@ -32,10 +32,14 @@ export default function Login() {
     setError('');
     
     try {
-      // Only use our custom API, avoid NextAuth entirely
+      console.log('Sending login request...');
+      
+      // Only use our custom API
       const response = await fetch('/api/custom-login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
           email: credentials.email,
           password: credentials.password,
@@ -43,21 +47,21 @@ export default function Login() {
       });
       
       const data = await response.json();
+      console.log('Login response:', data);
       
       if (!response.ok) {
         throw new Error(data.message || 'Error al iniciar sesión');
       }
       
+      if (!data.success || !data.user) {
+        throw new Error('Respuesta de autenticación inválida');
+      }
+      
       // Store user data in localStorage
       localStorage.setItem('user', JSON.stringify(data.user));
       
-      // Navigate with router.push first, and if that fails, fall back to window.location
-      try {
-        await router.push('/dashboard');
-      } catch (err) {
-        console.log('Router navigation failed, using window.location');
-        window.location.href = '/dashboard';
-      }
+      // Use simpler navigation
+      window.location.href = '/dashboard';
     } catch (error) {
       console.error('Login error:', error);
       setError(error.message || 'Error al iniciar sesión');
