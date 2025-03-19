@@ -3,7 +3,6 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
 import { connectToDatabase } from "../../../lib/db";
 
-// Implementación mínima de NextAuth sin MongoDB Adapter para empezar
 export default NextAuth({
   providers: [
     CredentialsProvider({
@@ -13,31 +12,23 @@ export default NextAuth({
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials) return null;
-        
         try {
+          if (!credentials) return null;
+          
           const { db } = await connectToDatabase();
-          const user = await db.collection("users").findOne({
-            email: credentials.email,
+          const user = await db.collection("users").findOne({ 
+            email: credentials.email 
           });
-
-          if (!user) {
-            return null;
-          }
-
-          const isValid = await compare(
-            credentials.password,
-            user.password
-          );
-
-          if (!isValid) {
-            return null;
-          }
-
+          
+          if (!user) return null;
+          
+          const isValid = await compare(credentials.password, user.password);
+          if (!isValid) return null;
+          
           return {
             id: user._id.toString(),
-            name: user.name,
             email: user.email,
+            name: user.name || 'Usuario'
           };
         } catch (error) {
           console.error("Auth error:", error);
@@ -46,27 +37,13 @@ export default NextAuth({
       },
     }),
   ],
-  session: {
-    strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 days
-  },
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      if (token) {
-        session.user.id = token.id;
-      }
-      return session;
-    },
-  },
-  pages: {
-    signIn: "/login",
+  session: { strategy: "jwt" },
+  jwt: {
+    secret: process.env.NEXTAUTH_SECRET,
   },
   secret: process.env.NEXTAUTH_SECRET,
+  pages: {
+    signIn: '/login',
+  },
   debug: true,
 });

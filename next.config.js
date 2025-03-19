@@ -1,10 +1,21 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {
+module.exports = {
   reactStrictMode: true,
   swcMinify: true,
   images: {
-    unoptimized: true, // Ayuda con Netlify
-  }
+    unoptimized: true,
+  },
+  // Asegurar que las rutas API funcionen correctamente
+  async rewrites() {
+    return [
+      {
+        source: '/api/auth/:path*',
+        destination: '/api/auth/:path*',
+      },
+      {
+        source: '/api/:path*',
+        destination: '/api/:path*',
+      },
+    ]
+  },
 }
-
-module.exports = nextConfig;

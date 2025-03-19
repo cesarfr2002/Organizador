@@ -5,28 +5,8 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
-# Keep environment variables
+# Environment variables básicas
 [build.environment]
   NEXTAUTH_URL = "https://uorganizer.netlify.app"
   NEXTAUTH_SECRET = "57dd7df0034aacd3fec020a220930081d9d3e9318b54c082b55cad978f57c064"
   NODE_VERSION = "18"
-
-# Simplify function settings to the minimum required
-[functions]
-  node_bundler = "esbuild"
-  external_node_modules = ["bcryptjs", "mongodb"]
-
-# Simple redirect configuration
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-  force = false
-  conditions = {Next-Auth = false}
-
-# This ensures /api/auth routes are properly handled
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/:splat"
-  status = 200
-  force = true
