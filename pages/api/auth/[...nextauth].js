@@ -119,7 +119,7 @@ export const authOptions = {
 // Create our custom handler with better error handling
 const authHandler = async (req, res) => {
   try {
-    // Hard-code NEXTAUTH_URL for this request
+    // Correctly set NEXTAUTH_URL environment variable
     process.env.NEXTAUTH_URL = BASE_URL;
     
     return await NextAuth(req, res, authOptions);
