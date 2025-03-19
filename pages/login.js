@@ -32,18 +32,24 @@ export default function Login() {
     setLoading(true);
     
     if (isLogin) {
-      // Iniciar sesión
-      const result = await signIn('credentials', {
-        redirect: false,
-        email: credentials.email,
-        password: credentials.password,
-      });
-      
-      if (result.error) {
-        toast.error(result.error);
+      try {
+        const result = await signIn('credentials', {
+          redirect: false,
+          email: credentials.email,
+          password: credentials.password,
+        });
+        
+        if (result.error) {
+          toast.error(result.error || 'Error al iniciar sesión');
+          setLoading(false);
+        } else {
+          toast.success('Inicio de sesión exitoso');
+          router.push('/');
+        }
+      } catch (error) {
+        console.error('Error during sign in:', error);
+        toast.error('Error al conectar con el servidor de autenticación');
         setLoading(false);
-      } else {
-        router.push('/');
       }
     } else {
       // Registrar nuevo usuario

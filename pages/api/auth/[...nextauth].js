@@ -60,6 +60,13 @@ export const authOptions = {
         session.user.id = token.id;
       }
       return session;
+    },
+    async redirect({ url, baseUrl }) {
+      // Ensure we're always using absolute URLs to avoid 'Invalid URL' errors
+      if (url.startsWith("/")) return `${baseUrl}${url}`
+      // Allow callback URLs on the same origin
+      else if (new URL(url).origin === baseUrl) return url
+      return baseUrl
     }
   },
   pages: {
