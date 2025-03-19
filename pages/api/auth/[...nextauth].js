@@ -59,6 +59,8 @@ export const authOptions = {
       }
     })
   ],
+  // Define the base URL directly in the NextAuth config
+  url: BASE_URL,
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 días
@@ -116,12 +118,10 @@ export const authOptions = {
   },
 };
 
-// Create our custom handler with better error handling
+// Create our custom handler without trying to set environment variables
 const authHandler = async (req, res) => {
   try {
-    // Correctly set NEXTAUTH_URL environment variable
-    process.env.NEXTAUTH_URL = BASE_URL;
-    
+    // Don't try to modify environment variables here
     return await NextAuth(req, res, authOptions);
   } catch (error) {
     console.error("NextAuth error:", error);
