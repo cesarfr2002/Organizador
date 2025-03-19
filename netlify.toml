@@ -17,16 +17,7 @@
   # Increase API function processing resources
   node_bundler = "esbuild"
   external_node_modules = ["bcryptjs", "mongodb", "jsonwebtoken", "cookie"]
-  included_files = ["lib/**/*", "models/**/*"]  # <- Updated to ensure all nested files
-
-[functions.api_custom_login]
-  included_files = ["lib/**/*", "models/**/*"]  # <- Updated to ensure all nested files
-  memory = 1024
-  timeout = 30
-
-[functions.next_auth]
-  included_files = ["public/**/*", ".env", ".env.*"]
-  timeout = 30
+  included_files = ["lib/**/*", "models/**/*"]
 
 # Add headers for security and CORS
 [[headers]]
@@ -38,21 +29,28 @@
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
     Access-Control-Allow-Origin = "*"
 
-# Ensure all auth routes are properly handled 
+# IMPORTANT: Add manifest.json handling
+[[redirects]]
+  from = "/manifest.json"
+  to = "/manifest.json"
+  status = 200
+
+# Ensure API routes are handled properly
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/api/:splat"
   status = 200
+  force = true
 
-# Handle SPA routing for client-side navigation
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-  conditions = {Role = ["admin"]}
-
-# Ensure proper redirects for auth callback
+# Fix auth callbacks - make sure this route is precise
 [[redirects]]
   from = "/api/auth/*"
   to = "/.netlify/functions/next_api_auth_:splat"
+  status = 200
+  force = true
+
+# Handle SPA routing for client-side navigation - make sure this is last
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
   status = 200

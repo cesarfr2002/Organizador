@@ -5,13 +5,32 @@ export async function middleware(req) {
   const path = req.nextUrl.pathname
   
   // Public paths that don't require authentication
-  const publicPaths = ['/login', '/api/auth', '/404', '/500', '/manifest.json']
+  const publicPaths = [
+    '/login', 
+    '/api/auth', 
+    '/404', 
+    '/500', 
+    '/manifest.json',
+    '/favicon.ico',
+    '/sw.js',
+  ]
+  
+  // Is this a public path or static resource?
   const isPublicPath = publicPaths.some(publicPath => 
     path === publicPath || path.startsWith(`${publicPath}/`)
   )
   
-  // Also allow access to static files
-  if (path.includes('/_next/') || path.includes('/favicon.ico') || path.includes('.png')) {
+  // Allow access to static files and API routes
+  if (
+    path.includes('/_next/') || 
+    path.includes('/static/') ||
+    path.endsWith('.png') ||
+    path.endsWith('.ico') ||
+    path.endsWith('.json') ||
+    path.endsWith('.js') ||
+    path.endsWith('.css') ||
+    path.startsWith('/api/')
+  ) {
     return NextResponse.next()
   }
   
@@ -19,37 +38,32 @@ export async function middleware(req) {
     return NextResponse.next()
   }
   
-  // Check if the user is authenticated
-  const token = await getToken({ 
-    req, 
-    secret: process.env.NEXTAUTH_SECRET,
-    secureCookie: process.env.NODE_ENV === 'production'
-  })
-  
-  // Redirect unauthenticated users to login
-  if (!token) {
-    // Use a valid URL construction to avoid errors
-    const loginUrl = new URL('/login', req.url)
+  try {
+    // Check if user is authenticated
+    const token = await getToken({ 
+      req, 
+      secret: process.env.NEXTAUTH_SECRET,
+      secureCookie: process.env.NODE_ENV === 'production'
+    })
     
-    // Make sure the URL is valid before setting search params
-    try {
-      // Only set callback URL if it's a valid URL
-      if (req.url) {
-        loginUrl.searchParams.set('callbackUrl', req.url)
-      }
-      return NextResponse.redirect(loginUrl)
-    } catch (error) {
-      // Fallback if there's an issue with URL construction
-      return NextResponse.redirect(new URL('/login', req.url))
+    // If not authenticated, redirect to login
+    if (!token) {
+      const url = new URL('/login', req.url)
+      url.searchParams.set('callbackUrl', req.url)
+      return NextResponse.redirect(url)
     }
+    
+    // If authenticated, continue
+    return NextResponse.next()
+  } catch (error) {
+    console.error('Middleware error:', error)
+    // Fail safe - redirect to login if there's an error
+    return NextResponse.redirect(new URL('/login', req.url))
   }
-  
-  return NextResponse.next()
 }
 
-// Specify which paths middleware should run on
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.png$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.png$|.*\\.json$|.*\\.js$).*)',
   ],
 }

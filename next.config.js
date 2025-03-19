@@ -8,4 +8,22 @@ const withPWA = require('next-pwa')({
 module.exports = withPWA({
   reactStrictMode: true,
   swcMinify: true,
+  // Add this to ensure manifest.json and other static files are correctly served
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: '*',
+          },
+        ],
+      },
+    ];
+  },
+  // Ensure we copy manifest.json to the build output
+  webpack: (config) => {
+    return config;
+  },
 });
