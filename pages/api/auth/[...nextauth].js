@@ -6,18 +6,11 @@ import dbConnect from '../../../lib/dbConnect';
 import User from '../../../models/User';
 import bcrypt from 'bcryptjs';
 
+// Hard-coded base URL - this can be more reliable than environment variables in Netlify
+const BASE_URL = 'https://uorganizer.netlify.app';
+
 // Enable debugging for troubleshooting
 const debug = process.env.NODE_ENV === 'development' || process.env.DEBUG === 'true';
-
-// Ensure we have a valid NEXTAUTH_URL
-const getBaseUrl = () => {
-  // First try environment variable
-  if (process.env.NEXTAUTH_URL) {
-    return process.env.NEXTAUTH_URL.trim();
-  }
-  // Fallback to hardcoded URL for production
-  return 'https://uorganizer.netlify.app';
-};
 
 export const authOptions = {
   adapter: MongoDBAdapter(clientPromise),
@@ -84,35 +77,28 @@ export const authOptions = {
       return session;
     },
     
-    // Simplified redirect callback that avoids URL construction errors
-    async redirect({ url, baseUrl }) {
-      // Try to get a working baseUrl
-      baseUrl = baseUrl || getBaseUrl();
-      
-      // If no URL or it's just a hash, return to base URL
-      if (!url || url === '#' || url.startsWith('mailto:')) {
-        return baseUrl;
-      }
-      
-      // Safely handle relative URLs
+    // Simplified redirect callback with hard-coded URL
+    async redirect({ url }) {
+      // If URL is relative, append to base URL
       if (url.startsWith('/')) {
-        return `${baseUrl}${url}`;
+        return `${BASE_URL}${url}`;
       }
       
-      // Safely check if URL is of same origin, avoid URL constructor for safety
-      if (url.startsWith(baseUrl)) {
+      // If URL is already the full site URL, use it
+      if (url.startsWith(BASE_URL)) {
         return url;
       }
       
       // Default fallback to base URL
-      return baseUrl;
+      return BASE_URL;
     }
   },
   pages: {
     signIn: '/login',
     error: '/auth-error',
   },
-  secret: process.env.NEXTAUTH_SECRET || 'your-secret-fallback-for-development-only',
+  // Use hard-coded secret if environment variable isn't available
+  secret: process.env.NEXTAUTH_SECRET || '57dd7df0034aacd3fec020a220930081d9d3e9318b54c082b55cad978f57c064',
   debug,
   // Add logger for better debugging in production
   logger: {
@@ -133,14 +119,8 @@ export const authOptions = {
 // Create our custom handler with better error handling
 const authHandler = async (req, res) => {
   try {
-    console.log("Auth request path:", req.url);
-    
-    // Ensure NEXTAUTH_URL is set
-    if (!process.env.NEXTAUTH_URL) {
-      const baseUrl = getBaseUrl();
-      console.log(`Setting NEXTAUTH_URL to ${baseUrl}`);
-      process.env.NEXTAUTH_URL = baseUrl;
-    }
+    // Hard-code NEXTAUTH_URL for this request
+    process.env.NEXTAUTH_URL = BASE_URL;
     
     return await NextAuth(req, res, authOptions);
   } catch (error) {
