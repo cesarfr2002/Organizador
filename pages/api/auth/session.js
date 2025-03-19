@@ -11,13 +11,15 @@ export default async function handler(req, res) {
     const token = getTokenFromCookies(req);
     
     if (!token) {
-      return res.status(401).json({ error: 'Not authenticated' });
+      // Not authenticated but not an error
+      return res.status(200).json({ user: null });
     }
     
     const decoded = verifyToken(token);
     
     if (!decoded) {
-      return res.status(401).json({ error: 'Invalid token' });
+      // Invalid token but not an error
+      return res.status(200).json({ user: null });
     }
     
     const { db } = await connectToDatabase();
@@ -28,16 +30,25 @@ export default async function handler(req, res) {
     
     const user = await db.collection('users').findOne(
       { _id: userId },
-      { projection: { password: 0 } } // Exclude password
+      { projection: { password: 0 } }
     );
     
     if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(200).json({ user: null });
     }
     
-    return res.status(200).json({ user });
+    // Return a format compatible with what NextAuth would return
+    return res.status(200).json({
+      user: {
+        id: user._id.toString(),
+        name: user.name || user.email,
+        email: user.email,
+        image: user.image || null
+      },
+      expires: new Date(decoded.exp * 1000).toISOString()
+    });
   } catch (error) {
-    console.error('Error getting user:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error('Error getting session:', error);
+    return res.status(200).json({ user: null });
   }
 }

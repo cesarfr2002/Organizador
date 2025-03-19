@@ -1,18 +1,26 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 
-const AuthContext = createContext();
+const AuthContext = createContext({
+  user: null,
+  loading: true,
+  login: async () => {},
+  logout: () => {},
+  register: async () => {},
+  isAuthenticated: false,
+});
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
+  // Load user on initial load
   useEffect(() => {
-    // Check if user is logged in
     async function loadUserFromCookies() {
       try {
-        const res = await fetch('/api/auth/user');
+        setLoading(true);
+        const res = await fetch('/api/auth/session');
         if (res.ok) {
           const data = await res.json();
           if (data.user) {
@@ -31,6 +39,7 @@ export function AuthProvider({ children }) {
 
   async function login(email, password) {
     try {
+      setLoading(true);
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -47,21 +56,27 @@ export function AuthProvider({ children }) {
       }
     } catch (error) {
       return { success: false, error: 'An error occurred during login' };
+    } finally {
+      setLoading(false);
     }
   }
 
   async function logout() {
     try {
+      setLoading(true);
       await fetch('/api/auth/logout', { method: 'POST' });
       setUser(null);
       router.push('/login');
     } catch (error) {
       console.error('Logout failed', error);
+    } finally {
+      setLoading(false);
     }
   }
 
   async function register(name, email, password) {
     try {
+      setLoading(true);
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -78,6 +93,8 @@ export function AuthProvider({ children }) {
       }
     } catch (error) {
       return { success: false, error: 'Registration failed' };
+    } finally {
+      setLoading(false);
     }
   }
 
