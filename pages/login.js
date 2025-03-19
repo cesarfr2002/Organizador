@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { signIn } from "next-auth/react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import Head from "next/head";
@@ -18,23 +17,30 @@ export default function Login() {
     
     try {
       console.log("Intentando iniciar sesión...");
-      const result = await signIn("credentials", {
-        redirect: false,
-        email,
-        password,
+      
+      // Usar nuestra API personalizada en lugar de NextAuth
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
       });
       
-      console.log("Resultado del inicio de sesión:", result);
-
-      if (!result || result.error) {
-        setError("Credenciales inválidas. Intenta nuevamente.");
-      } else {
-        console.log("Login exitoso, redirigiendo...");
-        router.push("/dashboard");
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al iniciar sesión');
       }
+      
+      console.log("Login exitoso, redirigiendo...");
+      
+      // Guardar información básica del usuario en localStorage para acceso fácil en el cliente
+      localStorage.setItem('user', JSON.stringify(data.user));
+      
+      // Redirigir a dashboard
+      router.push("/dashboard");
     } catch (err) {
       console.error("Error de inicio de sesión:", err);
-      setError("Ha ocurrido un error: " + (err.message || "Error desconocido"));
+      setError(err.message || "Ha ocurrido un error. Por favor, intenta nuevamente.");
     } finally {
       setIsLoading(false);
     }

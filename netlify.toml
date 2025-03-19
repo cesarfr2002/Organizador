@@ -10,18 +10,10 @@
   NEXTAUTH_URL = "https://uorganizer.netlify.app"
   NEXTAUTH_SECRET = "57dd7df0034aacd3fec020a220930081d9d3e9318b54c082b55cad978f57c064"
   NODE_VERSION = "18"
-  DEBUG = "true"
 
-# Necesario para asegurarse de que la PWA funcione correctamente
+# Headers for manifest and security
 [[headers]]
   for = "/manifest.json"
   [headers.values]
     Content-Type = "application/manifest+json"
     Cache-Control = "public, max-age=0, must-revalidate"
-    
-[[headers]]
-  for = "/*"
-  [headers.values]
-    X-Frame-Options = "DENY"
-    X-Content-Type-Options = "nosniff"
-    Content-Security-Policy = "frame-ancestors 'none'"
