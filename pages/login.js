@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
+import { signIn } from 'next-auth/react';
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
@@ -24,27 +25,37 @@ export default function Login() {
     setError('');
     
     try {
-      // Use our custom login endpoint instead of NextAuth
-      const response = await fetch('/api/custom-login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: credentials.email,
-          password: credentials.password,
-        }),
+      // Try NextAuth first
+      const result = await signIn('credentials', {
+        redirect: false,
+        email: credentials.email,
+        password: credentials.password,
       });
       
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.message || 'Error al iniciar sesión');
+      if (result?.error) {
+        // If NextAuth fails, try our custom API
+        const response = await fetch('/api/custom-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: credentials.email,
+            password: credentials.password,
+          }),
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.message || 'Error al iniciar sesión');
+        }
+        
+        // Store user data in localStorage
+        localStorage.setItem('user', JSON.stringify(data.user));
+        window.location.href = '/dashboard';
+      } else {
+        // NextAuth login worked
+        router.push('/dashboard');
       }
-      
-      // On successful login
-      localStorage.setItem('user', JSON.stringify(data.user));
-      router.push('/dashboard');
     } catch (error) {
       console.error('Login error:', error);
       setError(error.message || 'Error al iniciar sesión');
