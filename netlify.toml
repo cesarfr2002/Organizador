@@ -19,19 +19,15 @@
   external_node_modules = ["bcryptjs", "mongodb", "jsonwebtoken", "cookie"]
   included_files = ["lib/**", "models/**"]
 
-# Function-specific settings
-[[functions]]
-  # Target the login function specifically
-  pattern = "api/custom-login"
+# Function-specific settings are defined within the [functions] section
+[functions.api_custom_login]
   included_files = ["lib/**", "models/**"]
-  memory_size = 1024
-  timeout_seconds = 30
+  memory = 1024
+  timeout = 30
 
-# For NextAuth functions
-[[functions]]
-  pattern = "api/auth/*"
+[functions.next_auth]
   included_files = ["public/**", ".env", ".env.*"]
-  timeout_seconds = 30
+  timeout = 30
 
 # Add headers for security and CORS
 [[headers]]
