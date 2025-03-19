@@ -11,6 +11,10 @@
   NEXTAUTH_SECRET = "57dd7df0034aacd3fec020a220930081d9d3e9318b54c082b55cad978f57c064"
   NODE_VERSION = "18"
 
+# Important: Make sure these packages are included
+[functions]
+  external_node_modules = ["bcryptjs", "mongodb", "jsonwebtoken", "cookie"]
+
 # Headers for manifest
 [[headers]]
   for = "/manifest.json"
