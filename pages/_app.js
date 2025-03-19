@@ -72,7 +72,7 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }) {
 
   return (
     <ErrorBoundary>
-      <SessionProvider session={session}>
+      <SessionProvider session={session} basePath="/api/auth">
         <GamificationProvider>
           <ThemeProvider attribute="class">
             <NotificationProvider>

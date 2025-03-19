@@ -5,24 +5,7 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
-# Handle API routes properly
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/api/:splat"
-  status = 200
-
-# Ensure NextAuth callbacks work properly
-[[redirects]]
-  from = "/api/auth/*"
-  to = "/.netlify/functions/next_api_auth_:splat"
-  status = 200
-
-# Default redirect for SPAs
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-
+# Keep environment variables
 [build.environment]
   NEXT_PUBLIC_API_URL = "https://uorganizer.netlify.app"
   NEXTAUTH_URL = "https://uorganizer.netlify.app"
@@ -33,6 +16,3 @@
   node_bundler = "esbuild"
   external_node_modules = ["bcryptjs", "mongodb"]
   included_files = ["lib/**", "models/**"]
-
-# Remove the redirects that might be causing conflicts with Next.js API routes
-# Let the Next.js plugin handle the routing properly
