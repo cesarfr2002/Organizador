@@ -29,7 +29,8 @@ console.log('- Using site URL:', siteUrl);
 console.log('=========== END NEXTAUTH INITIALIZATION ===========');
 
 export const authOptions = {
-  adapter: MongoDBAdapter(clientPromise),
+  // Remove the adapter temporarily to rule out MongoDB connection issues
+  // adapter: MongoDBAdapter(clientPromise),
   providers: [
     CredentialsProvider({
       name: 'credentials',
@@ -128,41 +129,11 @@ export const authOptions = {
       console.log('- Original URL:', url);
       console.log('- Base URL:', baseUrl);
       
-      try {
-        // Handle relative URLs more safely
-        if (url.startsWith('/')) {
-          const result = `${baseUrl}${url}`;
-          console.log('- Returning relative URL with baseUrl:', result);
-          return result;
-        }
-        
-        // Safety check - if URL is not valid, return to baseUrl
-        if (!url || url === 'undefined' || url === 'null') {
-          console.log('- Invalid URL detected, returning baseUrl:', baseUrl);
-          return baseUrl;
-        }
-        
-        // Try to parse URL safely
-        try {
-          const parsedUrl = new URL(url);
-          // Only allow redirects to the same host
-          if (parsedUrl.origin === new URL(baseUrl).origin) {
-            console.log('- Same origin URL, returning:', url);
-            return url;
-          }
-        } catch (parseError) {
-          console.error('- Error parsing URL:', parseError.message);
-          // If there's an error parsing, return baseUrl
-          return baseUrl;
-        }
-        
-        // Default: return baseUrl for safety
-        console.log('- Returning baseUrl as default:', baseUrl);
-        return baseUrl;
-      } catch (error) {
-        console.error('- Redirect callback error:', error);
-        return baseUrl;
+      // Simplify redirect logic to avoid URL parsing errors
+      if (url.startsWith('/')) {
+        return `${baseUrl}${url}`;
       }
+      return baseUrl;
     }
   },
   pages: {

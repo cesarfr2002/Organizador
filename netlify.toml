@@ -10,6 +10,13 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
+# Add specific handling for the NextAuth callback route
+[[redirects]]
+  from = "/api/auth/*"
+  to = "/.netlify/functions/next_api_auth_:splat"
+  status = 200
+  force = true
+
 # Handle redirects for SPA behavior
 [[redirects]]
   from = "/*"
