@@ -33,22 +33,28 @@ export default function Login() {
     
     if (isLogin) {
       try {
+        // Log the base URL to help debugging
+        console.log('Base URL:', window.location.origin);
+        
         const result = await signIn('credentials', {
           redirect: false,
           email: credentials.email,
           password: credentials.password,
         });
         
-        if (result.error) {
+        if (result?.error) {
           toast.error(result.error || 'Error al iniciar sesión');
           setLoading(false);
-        } else {
+        } else if (result?.ok) {
           toast.success('Inicio de sesión exitoso');
           router.push('/');
+        } else {
+          toast.error('Error al conectar con el servidor de autenticación');
+          setLoading(false);
         }
       } catch (error) {
         console.error('Error during sign in:', error);
-        toast.error('Error al conectar con el servidor de autenticación');
+        toast.error(`Error de autenticación: ${error.message || 'Error desconocido'}`);
         setLoading(false);
       }
     } else {

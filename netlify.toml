@@ -1,0 +1,41 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[build.environment]
+  NEXT_PUBLIC_API_URL = "https://uorganizer.netlify.app"
+  NEXTAUTH_URL = "https://uorganizer.netlify.app"
+  NODE_VERSION = "18"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  force = false
+  conditions = {Role = ["admin"]}
+
+[functions]
+  # Increase timeout for API functions
+  node_bundler = "esbuild"
+
+# Handle 404s
+[[redirects]]
+  from = "/*"
+  to = "/404"
+  status = 404
+
+# Handle API errors
+[[redirects]]
+  from = "/api/*"
+  status = 200
+  force = false
+
+# Ensure trailing slash consistency
+[[redirects]]
+  from = "/*"
+  to = "/:splat/"
+  status = 301
+  force = false

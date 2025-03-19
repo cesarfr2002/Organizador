@@ -1,13 +1,18 @@
 import NextAuth from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { MongoDBAdapter } from '@auth/mongodb-adapter'; // Cambiado a la nueva ubicación
+import { MongoDBAdapter } from '@auth/mongodb-adapter';
 import clientPromise from '../../../lib/mongodb';
 import dbConnect from '../../../lib/dbConnect';
 import User from '../../../models/User';
 import bcrypt from 'bcryptjs';
 
+// Make sure we have a valid NEXTAUTH_URL
+const BASE_URL = process.env.NEXTAUTH_URL || 
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 
+  (process.env.URL ? process.env.URL : 'http://localhost:3000'));
+
 export const authOptions = {
-  adapter: MongoDBAdapter(clientPromise), // El adaptador sigue igual
+  adapter: MongoDBAdapter(clientPromise),
   providers: [
     CredentialsProvider({
       name: 'credentials',
@@ -16,31 +21,36 @@ export const authOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        await dbConnect();
-        
-        // Buscar usuario por email
-        const user = await User.findOne({ email: credentials.email });
-        
-        if (!user) {
-          return null;
+        try {
+          await dbConnect();
+          
+          // Buscar usuario por email
+          const user = await User.findOne({ email: credentials.email });
+          
+          if (!user) {
+            throw new Error('Email o contraseña incorrectos');
+          }
+          
+          // Verificar contraseña
+          const isPasswordMatch = await bcrypt.compare(
+            credentials.password,
+            user.password
+          );
+          
+          if (!isPasswordMatch) {
+            throw new Error('Email o contraseña incorrectos');
+          }
+          
+          // Devolver objeto de usuario sin la contraseña
+          return {
+            id: user._id.toString(),
+            name: user.name,
+            email: user.email
+          };
+        } catch (error) {
+          console.error('Authentication error:', error);
+          throw new Error(error.message || 'Error en la autenticación');
         }
-        
-        // Verificar contraseña
-        const isPasswordMatch = await bcrypt.compare(
-          credentials.password,
-          user.password
-        );
-        
-        if (!isPasswordMatch) {
-          return null;
-        }
-        
-        // Devolver objeto de usuario sin la contraseña
-        return {
-          id: user._id.toString(),
-          name: user.name,
-          email: user.email
-        };
       }
     })
   ],
@@ -62,19 +72,33 @@ export const authOptions = {
       return session;
     },
     async redirect({ url, baseUrl }) {
-      // Ensure we're always using absolute URLs to avoid 'Invalid URL' errors
-      if (url.startsWith("/")) return `${baseUrl}${url}`
-      // Allow callback URLs on the same origin
-      else if (new URL(url).origin === baseUrl) return url
-      return baseUrl
+      try {
+        // Handle relative URLs
+        if (!url || url === '') return baseUrl;
+        if (url.startsWith('/')) return `${baseUrl}${url}`;
+        
+        // Check if URL is valid before creating URL object
+        const urlPattern = /^(https?:\/\/)/;
+        if (!urlPattern.test(url)) return baseUrl;
+        
+        // Allow same-origin URLs
+        const urlObj = new URL(url);
+        const baseUrlObj = new URL(baseUrl);
+        if (urlObj.origin === baseUrlObj.origin) return url;
+        
+        return baseUrl;
+      } catch (error) {
+        console.error('Redirect error:', error);
+        return baseUrl;
+      }
     }
   },
   pages: {
     signIn: '/login',
-    error: '/login',
+    error: '/auth-error',  // Add a custom error page
   },
   secret: process.env.NEXTAUTH_SECRET,
-  debug: process.env.NODE_ENV === 'development',
+  debug: true, // Enable debug mode temporarily to see detailed errors
 };
 
 export default NextAuth(authOptions);
