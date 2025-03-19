@@ -16,6 +16,13 @@ export default function Login() {
   const router = useRouter();
   const { status } = useSession();
 
+  // Add these console logs near the beginning of your component
+  console.log('Login component loaded');
+  console.log('ENV check - NEXTAUTH_URL exists:', !!process.env.NEXTAUTH_URL);
+  console.log('ENV check - NEXTAUTH_URL value:', process.env.NEXTAUTH_URL);
+  console.log('ENV check - MONGODB_URI exists:', !!process.env.MONGODB_URI);
+  console.log('ENV check - DEBUG exists:', !!process.env.DEBUG);
+
   // Redirigir si ya está autenticado
   if (status === 'authenticated') {
     router.push('/');
@@ -33,11 +40,16 @@ export default function Login() {
     
     if (isLogin) {
       try {
+        console.log('Login attempt started');
+        console.log('Calling signIn method with:', { email: credentials.email, password: '***' });
         const result = await signIn('credentials', {
           redirect: false,
           email: credentials.email,
           password: credentials.password,
         });
+        
+        console.log('SignIn result:', result);
+        console.log('Authentication error:', result?.error);
         
         if (result.error) {
           toast.error(result.error || 'Error al iniciar sesión');
