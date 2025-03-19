@@ -1,7 +1,5 @@
 import NextAuth from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { MongoDBAdapter } from '@auth/mongodb-adapter';
-import clientPromise from '../../../lib/mongodb';
 import dbConnect from '../../../lib/dbConnect';
 import User from '../../../models/User';
 import bcrypt from 'bcryptjs';
@@ -29,7 +27,7 @@ console.log('- Using site URL:', siteUrl);
 console.log('=========== END NEXTAUTH INITIALIZATION ===========');
 
 export const authOptions = {
-  // Temporarily remove MongoDB adapter until we verify basic auth works
+  // We're temporarily disabling the adapter until we fix the basic auth flow
   // adapter: MongoDBAdapter(clientPromise),
   providers: [
     CredentialsProvider({
@@ -125,11 +123,9 @@ export const authOptions = {
       return session;
     },
     async redirect({ url, baseUrl }) {
-      console.log('Redirect callback executing');
-      console.log('- Original URL:', url);
-      console.log('- Base URL:', baseUrl);
-      
-      // Simplify redirect to avoid errors
+      // Very simple redirect logic to avoid errors
+      console.log('Redirect callback - url:', url);
+      console.log('Redirect callback - baseUrl:', baseUrl);
       return baseUrl;
     }
   },
@@ -138,30 +134,41 @@ export const authOptions = {
     error: '/login',
   },
   secret: process.env.NEXTAUTH_SECRET,
-  debug: true, // Enable debug for all environments until we fix the issue
-  trustHost: true, // Important for Netlify deployment
-  site: siteUrl, // Provide fallback site URL
+  // Use only error level debugging to reduce noise
+  debug: process.env.NODE_ENV !== 'production',
 };
 
-// Export a custom handler to add logging
+// Custom handler with enhanced error handling
 export default async function auth(req, res) {
-  console.log(`NextAuth Handler - Method: ${req.method}, URL: ${req.url}`);
+  console.log(`[NextAuth] API Route Hit - ${req.method} ${req.url}`);
   
-  // Add CORS headers to help with Netlify deployments
+  // Add CORS headers for API routes
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   
+  // Handle preflight requests
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
   }
-
+  
   try {
+    console.log('[NextAuth] Calling NextAuth handler');
+    // Log all request details for debugging
+    console.log('[NextAuth] Request URL:', req.url);
+    console.log('[NextAuth] Request method:', req.method);
+    console.log('[NextAuth] Request headers:', JSON.stringify(req.headers, null, 2).substring(0, 500) + '...');
+    
+    // Call NextAuth with our config
     return await NextAuth(req, res, authOptions);
   } catch (error) {
-    console.error('NextAuth Error:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error('[NextAuth] Error in handler:', error);
+    // Send a proper API error response
+    res.status(500).json({ 
+      error: 'Internal Server Error',
+      message: error.message
+    });
   }
 }

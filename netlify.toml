@@ -10,14 +10,39 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
-# More specific redirects for NextAuth API routes
+# Change the redirect patterns for auth routes to be more specific and give them higher priority
+[[redirects]]
+  from = "/api/auth/session"
+  to = "/.netlify/functions/next_api_auth_session"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/auth/signin/*"
+  to = "/.netlify/functions/next_api_auth_signin_:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/auth/callback/*"
+  to = "/.netlify/functions/next_api_auth_callback_:splat"
+  status = 200
+  force = true
+
 [[redirects]]
   from = "/api/auth/*"
   to = "/.netlify/functions/next_api_auth_:splat"
   status = 200
   force = true
 
-# Default redirect for client-side routing
+# Additional redirect to handle public files
+[[redirects]]
+  from = "/favicon.ico"
+  to = "/favicon.ico"
+  status = 200
+  force = true
+
+# Default redirect for client-side routing (lower priority than API routes)
 [[redirects]]
   from = "/*"
   to = "/index.html"
