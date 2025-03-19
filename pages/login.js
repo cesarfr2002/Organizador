@@ -22,6 +22,14 @@ export default function Login() {
     console.log('Login component loaded');
     console.log('Window location:', window.location.origin);
     console.log('Router pathname:', router.pathname);
+    
+    // Add environment variable checks back
+    // These are exposed from next.config.js env property
+    console.log('ENV check - NEXTAUTH_URL exists:', !!process.env.NEXTAUTH_URL);
+    console.log('ENV check - NEXTAUTH_URL value:', process.env.NEXTAUTH_URL);
+    console.log('ENV check - MONGODB_URI exists:', !!process.env.MONGODB_URI);
+    console.log('ENV check - DEBUG exists:', !!process.env.DEBUG);
+    console.log('ENV check - NEXT_PUBLIC_APP_URL value:', process.env.NEXT_PUBLIC_APP_URL);
   }, [router.pathname]);
 
   // Redirigir si ya está autenticado
