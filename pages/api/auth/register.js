@@ -1,51 +1,55 @@
-import dbConnect from '../../../lib/dbConnect';
-import User from '../../../models/User';
-import { hash } from 'bcryptjs';
-
+import { connectToDatabase } from '../../../lib/mongodb';
+import { createToken, setTokenCookie } from '../../../lib/auth';
+import bcrypt from 'bcryptjs';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Método no permitido' });
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    await dbConnect();
-
     const { name, email, password } = req.body;
-
-    // Validación básica
-    if (!name || !email || !password) {
-      return res.status(400).json({ error: 'Faltan datos requeridos' });
+    
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
     }
-
-    if (password.length < 6) {
-      return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+    
+    const { db } = await connectToDatabase();
+    
+    // Check if user already exists
+    const existingUser = await db.collection('users').findOne({ email });
+    
+    if (existingUser) {
+      return res.status(400).json({ error: 'User already exists' });
     }
-
-    // Verificar si el usuario ya existe
-    const userExists = await User.findOne({ email });
-    if (userExists) {
-      return res.status(400).json({ error: 'Este correo ya está registrado' });
-    }
-
-    // Crear usuario
-    const hashedPassword = await hash(password, 12);
-    const user = await User.create({
+    
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
+    // Create new user
+    const result = await db.collection('users').insertOne({
       name,
       email,
       password: hashedPassword,
+      createdAt: new Date()
     });
-
-    // Eliminar la contraseña antes de devolver el usuario
-    const newUser = {
-      id: user._id,
-      name: user.name,
-      email: user.email,
+    
+    const user = {
+      _id: result.insertedId,
+      name,
+      email
     };
-
-    res.status(201).json(newUser);
+    
+    // Create token and set cookie
+    const token = createToken(user);
+    setTokenCookie(res, token);
+    
+    return res.status(201).json({
+      success: true,
+      user
+    });
   } catch (error) {
-    console.error('Error al registrar usuario:', error);
-    res.status(500).json({ error: 'Error al registrar usuario' });
+    console.error('Registration error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 }
