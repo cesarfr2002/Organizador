@@ -10,10 +10,16 @@
   NEXTAUTH_URL = "https://uorganizer.netlify.app"
   NEXTAUTH_SECRET = "57dd7df0034aacd3fec020a220930081d9d3e9318b54c082b55cad978f57c064"
   NODE_VERSION = "18"
+  # Disable SSG during build to avoid session errors
+  NEXT_SKIP_SSG = "true"
+  NEXT_PRIVATE_STANDALONE = "true"
 
 # Important: Make sure these packages are included
 [functions]
   external_node_modules = ["bcryptjs", "mongodb", "jsonwebtoken", "cookie"]
+  # Increase function timeout for NextJS
+  node_bundler = "esbuild"
+  included_files = ["public/**"]
 
 # Headers for manifest
 [[headers]]
