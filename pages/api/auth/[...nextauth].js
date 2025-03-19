@@ -70,8 +70,26 @@ export const authOptions = {
       }
       return session;
     },
-    // Extremely simplified redirect function to avoid URL construction issues
+    // Fix the redirect callback to handle URLs properly
     async redirect({ url, baseUrl }) {
+      // If URL is relative, it's safe to redirect
+      if (url.startsWith('/')) {
+        return `${baseUrl}${url}`;
+      }
+      // Check if URL is on the same origin
+      try {
+        // Only parse absolute URLs
+        if (url.startsWith('http')) {
+          const urlObj = new URL(url);
+          const baseUrlObj = new URL(baseUrl);
+          if (urlObj.origin === baseUrlObj.origin) {
+            return url;
+          }
+        }
+      } catch (e) {
+        console.error('Error parsing URL:', e);
+      }
+      // Otherwise, redirect to base URL
       return baseUrl;
     }
   },
