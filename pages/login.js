@@ -64,35 +64,39 @@ export default function Login() {
           password: '***', 
           passwordLength: credentials.password.length 
         });
+        console.log('Absolute API path:', `${window.location.origin}/api/auth/callback/credentials`);
         
-        // Simplified login call without potentially problematic callbackUrl
+        // Use a simpler signIn call
         const result = await signIn('credentials', {
           redirect: false,
           email: credentials.email,
           password: credentials.password,
-          // Remove callbackUrl to prevent URL construction errors
         });
         
-        console.log('SignIn result full object:', JSON.stringify(result, null, 2));
+        console.log('SignIn result full object:', result ? JSON.stringify(result, null, 2) : 'undefined');
         console.log('Authentication error:', result?.error);
         console.log('Authentication successful:', result?.ok);
         console.log('===== END LOGIN ATTEMPT DIAGNOSTICS =====');
         
-        if (result?.error) {
+        if (!result) {
+          console.error('No result from signIn - API may be unavailable');
+          toast.error('Error conectando al servicio de autenticación. Inténtalo más tarde.');
+          setLoading(false);
+          return;
+        }
+        
+        if (result.error) {
           toast.error(result.error || 'Error al iniciar sesión');
           setLoading(false);
-        } else if (result?.ok) {
+        } else if (result.ok) {
           toast.success('Inicio de sesión exitoso');
-          // Use router.push without callback parameters
           router.push('/');
         } else {
           toast.error('Error desconocido al iniciar sesión');
           setLoading(false);
         }
       } catch (error) {
-        // ...existing error logging...
-        toast.error('Error al conectar con el servidor de autenticación. Por favor, inténtelo de nuevo.');
-        setLoading(false);
+        // ...existing error handling...
       }
     } else {
       // Registrar nuevo usuario

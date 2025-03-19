@@ -29,7 +29,7 @@ console.log('- Using site URL:', siteUrl);
 console.log('=========== END NEXTAUTH INITIALIZATION ===========');
 
 export const authOptions = {
-  // Remove the adapter temporarily to rule out MongoDB connection issues
+  // Temporarily remove MongoDB adapter until we verify basic auth works
   // adapter: MongoDBAdapter(clientPromise),
   providers: [
     CredentialsProvider({
@@ -129,10 +129,7 @@ export const authOptions = {
       console.log('- Original URL:', url);
       console.log('- Base URL:', baseUrl);
       
-      // Simplify redirect logic to avoid URL parsing errors
-      if (url.startsWith('/')) {
-        return `${baseUrl}${url}`;
-      }
+      // Simplify redirect to avoid errors
       return baseUrl;
     }
   },
@@ -146,4 +143,25 @@ export const authOptions = {
   site: siteUrl, // Provide fallback site URL
 };
 
-export default NextAuth(authOptions);
+// Export a custom handler to add logging
+export default async function auth(req, res) {
+  console.log(`NextAuth Handler - Method: ${req.method}, URL: ${req.url}`);
+  
+  // Add CORS headers to help with Netlify deployments
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
+  
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+
+  try {
+    return await NextAuth(req, res, authOptions);
+  } catch (error) {
+    console.error('NextAuth Error:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+}

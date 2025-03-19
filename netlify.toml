@@ -10,15 +10,24 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
-# Add specific handling for the NextAuth callback route
+# More specific redirects for NextAuth API routes
 [[redirects]]
   from = "/api/auth/*"
   to = "/.netlify/functions/next_api_auth_:splat"
   status = 200
   force = true
 
-# Handle redirects for SPA behavior
+# Default redirect for client-side routing
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+  force = false
+
+# Add headers for CORS
+[[headers]]
+  for = "/api/*"
+    [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
+    Access-Control-Allow-Headers = "Origin, X-Requested-With, Content-Type, Accept"
