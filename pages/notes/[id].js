@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { useSession } from 'next-auth/react';
+import { useAuth } from '../../context/AuthContext';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'react-toastify';
@@ -11,11 +11,10 @@ import Link from 'next/link';
 import Head from 'next/head';
 import { useGamification } from '../../context/GamificationContext';
 
-export default function NoteDetail() {
-  const { data: session, status } = useSession();
+export default function NotePage({ note }) {
+  const { user, isAuthenticated } = useAuth();
   const router = useRouter();
   const { id } = router.query;
-  const [note, setNote] = useState(null);
   const [loading, setLoading] = useState(true);
   const [studyMode, setStudyMode] = useState(false);
   const [lastScrollPosition, setLastScrollPosition] = useState(0);
@@ -25,7 +24,7 @@ export default function NoteDetail() {
   const { addPoints, gamificationEnabled } = useGamification() || {};
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
+    if (!isAuthenticated) {
       router.push('/login');
       return;
     }
@@ -38,10 +37,10 @@ export default function NoteDetail() {
       sanitize: false
     });
     
-    if (status === 'authenticated' && id) {
+    if (isAuthenticated && id) {
       fetchNote();
     }
-  }, [status, id, router]);
+  }, [isAuthenticated, id, router]);
 
   // Guardar posición de scroll cuando se activa el modo estudio
   useEffect(() => {
@@ -214,7 +213,7 @@ export default function NoteDetail() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [studyMode, id, toggleImportant]);
 
-  if (status === 'loading' || loading) {
+  if (!isAuthenticated || loading) {
     return (
       <Layout>
         <div className="flex justify-center items-center h-64">
@@ -384,6 +383,7 @@ export default function NoteDetail() {
                   </svg>
                   Compartir
                 </button>
+                
                 
                 <button
                   onClick={() => window.print()}

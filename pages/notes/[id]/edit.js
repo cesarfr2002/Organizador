@@ -1,4 +1,4 @@
-import { useSession } from 'next-auth/react';
+import { useAuth } from '../../../context/AuthContext';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Layout from '../../../components/Layout';
@@ -6,17 +6,17 @@ import NoteEditor from '../../../components/NoteEditor';
 import Link from 'next/link';
 import { toast } from 'react-toastify';
 
-export default function EditNote() {
-  const { data: session, status } = useSession();
+export default function EditNotePage({ note }) {
+  const { user, isAuthenticated } = useAuth();
   const router = useRouter();
   const { id } = router.query;
 
-  if (status === 'unauthenticated') {
+  if (!isAuthenticated) {
     router.push('/login');
     return null;
   }
 
-  if (status === 'loading' || !id) {
+  if (!id) {
     return (
       <Layout>
         <div className="flex justify-center items-center h-64">
@@ -42,4 +42,27 @@ export default function EditNote() {
       <NoteEditor noteId={id} />
     </Layout>
   );
+}
+
+export async function getServerSideProps({ req, res, params }) {
+  // Check for auth cookie
+  const cookies = req.headers.cookie || '';
+  const hasAuthCookie = cookies.includes('uorganizer_auth_token=');
+  
+  if (!hasAuthCookie) {
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false,
+      },
+    };
+  }
+  
+  // ...existing note fetching logic...
+  
+  return {
+    props: {
+      note
+    }
+  };
 }

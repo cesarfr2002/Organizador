@@ -1,16 +1,16 @@
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import Layout from '../../components/Layout';
 import NotesList from '../../components/NotesList';
 import Head from 'next/head';
 import { toast } from 'react-toastify';
 import { useGamification } from '../../context/GamificationContext';
+import { useAuth } from '../../context/AuthContext';
 
-export default function Notes() {
-  const { data: session, status } = useSession();
+export default function NotesPage({ initialNotes }) {
+  const { user, isAuthenticated } = useAuth();
   const router = useRouter();
-  const [notes, setNotes] = useState([]);
+  const [notes, setNotes] = useState(initialNotes || []);
   const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState({
@@ -23,12 +23,12 @@ export default function Notes() {
   const { addPoints, unlockAchievement, gamificationEnabled } = useGamification() || {};
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
+    if (!isAuthenticated) {
       router.push('/login');
       return;
     }
     
-    if (status === 'authenticated') {
+    if (isAuthenticated) {
       fetchSubjects();
       fetchNotes();
       
@@ -37,7 +37,7 @@ export default function Notes() {
         addPoints(5, 'Revisar notas');
       }
     }
-  }, [status, filter]);
+  }, [isAuthenticated, filter]);
 
   // Track notes count for achievements
   useEffect(() => {
@@ -178,7 +178,7 @@ export default function Notes() {
     }
   };
 
-  if (status === 'loading' || loading) {
+  if (!isAuthenticated || loading) {
     return (
       <Layout>
         <div className="flex justify-center items-center h-64">
@@ -276,4 +276,27 @@ export default function Notes() {
       />
     </Layout>
   );
+}
+
+export async function getServerSideProps({ req, res }) {
+  // Check for auth cookie
+  const cookies = req.headers.cookie || '';
+  const hasAuthCookie = cookies.includes('uorganizer_auth_token=');
+  
+  if (!hasAuthCookie) {
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false,
+      },
+    };
+  }
+  
+  // ...existing note fetching logic...
+  
+  return {
+    props: {
+      initialNotes
+    }
+  };
 }

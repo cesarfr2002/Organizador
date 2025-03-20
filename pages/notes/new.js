@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useSession } from 'next-auth/react';
+import { useAuth } from '../../context/AuthContext';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Layout from '../../components/Layout';
@@ -7,16 +7,16 @@ import NoteEditor from '../../components/NoteEditor';
 import { toast } from 'react-toastify';
 import Link from 'next/link';
 
-export default function NewNote() {
-  const { data: session, status } = useSession();
+export default function NewNotePage() {
+  const { user, isAuthenticated } = useAuth();
   const router = useRouter();
 
-  if (status === 'unauthenticated') {
+  if (!isAuthenticated) {
     router.push('/login');
     return null;
   }
 
-  if (status === 'loading') {
+  if (isAuthenticated === 'loading') {
     return (
       <Layout>
         <div className="flex justify-center items-center h-64">
@@ -42,4 +42,22 @@ export default function NewNote() {
       <NoteEditor />
     </Layout>
   );
+}
+
+export async function getServerSideProps({ req, res }) {
+  const cookies = req.headers.cookie || '';
+  const hasAuthCookie = cookies.includes('uorganizer_auth_token=');
+  
+  if (!hasAuthCookie) {
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false,
+      },
+    };
+  }
+  
+  return {
+    props: {}
+  };
 }

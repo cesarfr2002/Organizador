@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { useAuth } from '../context/AuthContext';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Layout from '../components/Layout';
@@ -16,7 +16,7 @@ import { format, addDays, subDays, isSameDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 export default function Home() {
-  const { data: session, status } = useSession();
+  const { user, isAuthenticated } = useAuth();
   const router = useRouter();
   const [subjects, setSubjects] = useState([]);
   const [todaySchedule, setTodaySchedule] = useState([]);
@@ -25,15 +25,15 @@ export default function Home() {
   const [selectedDate, setSelectedDate] = useState(new Date());
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
+    if (!isAuthenticated) {
       router.push('/login');
       return;
     }
     
-    if (status === 'authenticated') {
+    if (isAuthenticated) {
       fetchDashboardData();
     }
-  }, [status, router, selectedDate]); // Re-fetch when selectedDate changes
+  }, [isAuthenticated, router, selectedDate]); // Re-fetch when selectedDate changes
   
   // Generate schedule for a specific date based on day of week
   const generateScheduleForDate = (subjects, targetDate) => {
@@ -102,7 +102,7 @@ export default function Home() {
     setSelectedDate(new Date());
   };
 
-  if (status === 'loading' || loading) {
+  if (isAuthenticated === 'loading' || loading) {
     return (
       <Layout>
         <div className="flex justify-center items-center h-64">
@@ -120,7 +120,7 @@ export default function Home() {
 
       <div className="mb-6">
         <h1 className="text-2xl font-bold">
-          {session ? `¡Hola, ${session.user.name}!` : 'Dashboard'}
+          {user ? `¡Hola, ${user.name}!` : 'Dashboard'}
         </h1>
         <p className="text-gray-600">
           Bienvenido a tu panel de control académico
@@ -255,4 +255,23 @@ export default function Home() {
       </div>
     </Layout>
   );
+}
+
+export async function getServerSideProps({ req, res }) {
+  // Check for auth cookie instead of NextAuth session
+  const cookies = req.headers.cookie || '';
+  const hasAuthCookie = cookies.includes('uorganizer_auth_token=');
+  
+  if (!hasAuthCookie) {
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false,
+      },
+    };
+  }
+  
+  return {
+    props: {}
+  };
 }
