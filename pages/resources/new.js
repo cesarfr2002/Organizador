@@ -1,28 +1,26 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { useSession } from 'next-auth/react';
+import { useAuth } from '../../context/AuthContext';
 import Head from 'next/head';
 import Layout from '../../components/Layout';
 import ResourceForm from '../../components/ResourceForm';
 import { toast } from 'react-toastify';
 
-export default function NewResource() {
-  const { data: session, status } = useSession();
+export default function NewResourcePage() {
+  const { user, isAuthenticated } = useAuth();
   const router = useRouter();
   const { subjectId } = router.query;
   const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
+    if (!isAuthenticated) {
       router.push('/login');
       return;
     }
     
-    if (status === 'authenticated') {
-      fetchSubjects();
-    }
-  }, [status, router]);
+    fetchSubjects();
+  }, [isAuthenticated, router]);
 
   const fetchSubjects = async () => {
     setLoading(true);
@@ -55,7 +53,7 @@ export default function NewResource() {
     router.back();
   };
 
-  if (status === 'loading' || loading) {
+  if (loading) {
     return (
       <Layout>
         <div className="flex justify-center items-center h-64">
@@ -86,8 +84,20 @@ export default function NewResource() {
 }
 
 // Add this to make the page require authentication and disable automatic static optimization
-export async function getServerSideProps(context) {
+export async function getServerSideProps({ req, res }) {
+  const cookies = req.headers.cookie || '';
+  const hasAuthCookie = cookies.includes('uorganizer_auth_token=');
+  
+  if (!hasAuthCookie) {
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false,
+      },
+    };
+  }
+  
   return {
-    props: {}, // will be passed to the page component as props
+    props: {}
   };
 }

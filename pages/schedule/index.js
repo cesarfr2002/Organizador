@@ -1,26 +1,26 @@
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { useAuth } from '../../context/AuthContext';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Layout from '../../components/Layout';
 import ScheduleManager from '../../components/ScheduleManager';
 import { toast } from 'react-toastify';
 
-export default function Schedule() {
-  const { data: session, status } = useSession();
+export default function SchedulePage() {
+  const { user, isAuthenticated } = useAuth();
   const router = useRouter();
   const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
+    if (!isAuthenticated) {
       router.push('/login');
     }
     
-    if (status === 'authenticated') {
+    if (isAuthenticated) {
       fetchSubjects();
     }
-  }, [status, router]);
+  }, [isAuthenticated, router]);
 
   const fetchSubjects = async () => {
     setLoading(true);
@@ -36,7 +36,7 @@ export default function Schedule() {
     }
   };
 
-  if (status === 'loading' || loading) {
+  if (loading) {
     return (
       <Layout>
         <div className="flex justify-center items-center h-64">
@@ -76,4 +76,22 @@ export default function Schedule() {
       )}
     </Layout>
   );
+}
+
+export async function getServerSideProps({ req, res }) {
+  const cookies = req.headers.cookie || '';
+  const hasAuthCookie = cookies.includes('uorganizer_auth_token=');
+  
+  if (!hasAuthCookie) {
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false,
+      },
+    };
+  }
+  
+  return {
+    props: {}
+  };
 }

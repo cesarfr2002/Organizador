@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Layout from '../components/Layout';
@@ -7,9 +6,10 @@ import PomodoroTimer from '../components/PomodoroTimer';
 import { toast } from 'react-toastify';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useAuth } from '../context/AuthContext';
 
-export default function Pomodoro() {
-  const { data: session, status } = useSession();
+export default function PomodoroPage() {
+  const { user, isAuthenticated } = useAuth();
   const router = useRouter();
   const { taskId } = router.query;
   
@@ -29,12 +29,12 @@ export default function Pomodoro() {
   const [subjectStats, setSubjectStats] = useState({});
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
+    if (!isAuthenticated) {
       router.push('/login');
       return;
     }
     
-    if (status === 'authenticated') {
+    if (isAuthenticated) {
       // Cargar historial de sesiones del localStorage
       const savedSessions = localStorage.getItem('pomodoroSessions');
       if (savedSessions) {
@@ -51,14 +51,14 @@ export default function Pomodoro() {
       fetchSubjects();
       fetchTasks();
     }
-  }, [status, router]);
+  }, [isAuthenticated, router]);
 
   // Add effect to load specific task when taskId is available
   useEffect(() => {
-    if (taskId && status === 'authenticated') {
+    if (taskId && isAuthenticated) {
       fetchTaskById(taskId);
     }
-  }, [taskId, status]);
+  }, [taskId, isAuthenticated]);
 
   useEffect(() => {
     if (selectedSubject) {
@@ -279,7 +279,7 @@ export default function Pomodoro() {
     }
   };
 
-  if (status === 'loading') {
+  if (!isAuthenticated) {
     return (
       <Layout>
         <div className="flex justify-center items-center h-64">
@@ -495,4 +495,23 @@ export default function Pomodoro() {
       )}
     </Layout>
   );
+}
+
+export async function getServerSideProps({ req, res }) {
+  // Check for auth cookie
+  const cookies = req.headers.cookie || '';
+  const hasAuthCookie = cookies.includes('uorganizer_auth_token=');
+  
+  if (!hasAuthCookie) {
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false,
+      },
+    };
+  }
+  
+  return {
+    props: {}
+  };
 }
