@@ -6,6 +6,11 @@ import dbConnect from '../../../lib/dbConnect';
 import User from '../../../models/User';
 import bcrypt from 'bcryptjs';
 
+console.log('Loading NextAuth configuration...');
+console.log('Environment vars in NextAuth config:');
+console.log('NEXTAUTH_URL:', process.env.NEXTAUTH_URL);
+console.log('NODE_ENV:', process.env.NODE_ENV);
+
 export const authOptions = {
   adapter: MongoDBAdapter(clientPromise), // El adaptador sigue igual
   providers: [
@@ -16,31 +21,41 @@ export const authOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        await dbConnect();
+        console.log('NextAuth authorize function called with credentials');
         
-        // Buscar usuario por email
-        const user = await User.findOne({ email: credentials.email });
-        
-        if (!user) {
+        try {
+          await dbConnect();
+          
+          // Buscar usuario por email
+          const user = await User.findOne({ email: credentials.email });
+          
+          if (!user) {
+            console.log('Invalid credentials');
+            return null;
+          }
+          
+          // Verificar contraseña
+          const isPasswordMatch = await bcrypt.compare(
+            credentials.password,
+            user.password
+          );
+          
+          if (!isPasswordMatch) {
+            console.log('Invalid credentials');
+            return null;
+          }
+          
+          // Devolver objeto de usuario sin la contraseña
+          console.log('Credentials valid, returning user');
+          return {
+            id: user._id.toString(),
+            name: user.name,
+            email: user.email
+          };
+        } catch (error) {
+          console.error('Error in authorize function:', error);
           return null;
         }
-        
-        // Verificar contraseña
-        const isPasswordMatch = await bcrypt.compare(
-          credentials.password,
-          user.password
-        );
-        
-        if (!isPasswordMatch) {
-          return null;
-        }
-        
-        // Devolver objeto de usuario sin la contraseña
-        return {
-          id: user._id.toString(),
-          name: user.name,
-          email: user.email
-        };
       }
     })
   ],
@@ -50,12 +65,14 @@ export const authOptions = {
   },
   callbacks: {
     async jwt({ token, user }) {
+      console.log('JWT callback called', { token, user: !!user });
       if (user) {
         token.id = user.id;
       }
       return token;
     },
     async session({ session, token }) {
+      console.log('Session callback called', { session, token: !!token });
       if (token) {
         session.user.id = token.id;
       }
