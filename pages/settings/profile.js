@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
+import { useAuth } from '../../context/AuthContext';
 import Layout from '../../components/Layout';
 import Head from 'next/head';
-import Link from 'next/link';
 import { toast } from 'react-toastify';
 
 export default function ProfileSettings() {
-  const { data: session, status } = useSession();
+  const { user, isAuthenticated } = useAuth();
   const router = useRouter();
-  const [profileData, setProfileData] = useState({
+  
+  const [loading, setLoading] = useState(false);
+  const [userData, setUserData] = useState({
     name: '',
     email: '',
     university: '',
@@ -17,19 +18,20 @@ export default function ProfileSettings() {
   });
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
+    if (!isAuthenticated) {
       router.push('/login');
+      return;
     }
     
-    if (status === 'authenticated' && session?.user) {
-      setProfileData({
-        name: session.user.name || '',
-        email: session.user.email || '',
-        university: session.user.university || '',
-        career: session.user.career || ''
+    if (user) {
+      setUserData({
+        name: user.name || '',
+        email: user.email || '',
+        university: user.university || '',
+        career: user.career || ''
       });
     }
-  }, [status, session]);
+  }, [isAuthenticated, user, router]);
 
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
@@ -40,7 +42,7 @@ export default function ProfileSettings() {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(profileData)
+        body: JSON.stringify(userData)
       });
       
       const data = await res.json();
@@ -56,7 +58,7 @@ export default function ProfileSettings() {
     }
   };
 
-  if (status === 'loading') {
+  if (loading) {
     return (
       <Layout>
         <div className="flex justify-center items-center h-64">
@@ -105,8 +107,8 @@ export default function ProfileSettings() {
                 </label>
                 <input
                   type="text"
-                  value={profileData.name}
-                  onChange={(e) => setProfileData({...profileData, name: e.target.value})}
+                  value={userData.name}
+                  onChange={(e) => setUserData({...userData, name: e.target.value})}
                   className="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 />
               </div>
@@ -117,8 +119,8 @@ export default function ProfileSettings() {
                 </label>
                 <input
                   type="email"
-                  value={profileData.email}
-                  onChange={(e) => setProfileData({...profileData, email: e.target.value})}
+                  value={userData.email}
+                  onChange={(e) => setUserData({...userData, email: e.target.value})}
                   className="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   disabled={true}
                 />
@@ -133,8 +135,8 @@ export default function ProfileSettings() {
                 </label>
                 <input
                   type="text"
-                  value={profileData.university}
-                  onChange={(e) => setProfileData({...profileData, university: e.target.value})}
+                  value={userData.university}
+                  onChange={(e) => setUserData({...userData, university: e.target.value})}
                   className="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 />
               </div>
@@ -145,8 +147,8 @@ export default function ProfileSettings() {
                 </label>
                 <input
                   type="text"
-                  value={profileData.career}
-                  onChange={(e) => setProfileData({...profileData, career: e.target.value})}
+                  value={userData.career}
+                  onChange={(e) => setUserData({...userData, career: e.target.value})}
                   className="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 />
               </div>
@@ -167,15 +169,15 @@ export default function ProfileSettings() {
             
             <div className="flex items-center space-x-6">
               <div className="w-20 h-20 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
-                {session?.user?.image ? (
+                {user?.image ? (
                   <img
-                    src={session.user.image}
+                    src={user.image}
                     alt="Avatar"
                     className="w-full h-full object-cover"
                   />
                 ) : (
                   <span className="text-2xl text-gray-400 dark:text-gray-500">
-                    {session?.user?.name?.charAt(0)?.toUpperCase() || '?'}
+                    {user?.name?.charAt(0)?.toUpperCase() || '?'}
                   </span>
                 )}
               </div>
@@ -197,4 +199,22 @@ export default function ProfileSettings() {
       </div>
     </Layout>
   );
+}
+
+export async function getServerSideProps({ req, res }) {
+  const cookies = req.headers.cookie || '';
+  const hasAuthCookie = cookies.includes('uorganizer_auth_token=');
+  
+  if (!hasAuthCookie) {
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false,
+      },
+    };
+  }
+  
+  return {
+    props: {}
+  };
 }

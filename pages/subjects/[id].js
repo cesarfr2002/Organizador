@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
-import Head from 'next/head';
+import { useAuth } from '../../context/AuthContext';
 import Layout from '../../components/Layout';
+import Head from 'next/head';
 import { toast } from 'react-toastify';
 import SubjectForm from '../../components/SubjectForm';
 import SubjectSchedule from '../../components/SubjectSchedule';
@@ -12,9 +12,11 @@ import Link from 'next/link';
 import { format, isPast, isToday } from 'date-fns';
 import { es } from 'date-fns/locale';
 
-export default function SubjectDetails() {
+export default function SubjectDetailPage() {
+  const { user, isAuthenticated } = useAuth();
   const router = useRouter();
   const { id } = router.query;
+  
   const [subject, setSubject] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('details'); // 'details', 'schedule', 'tasks', 'resources'
@@ -27,10 +29,15 @@ export default function SubjectDetails() {
   const [featuredResources, setFeaturedResources] = useState([]);
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      router.push('/login');
+      return;
+    }
+    
     if (id) {
       fetchSubject();
     }
-  }, [id]);
+  }, [id, isAuthenticated, router]);
 
   useEffect(() => {
     if (subject) {
@@ -574,4 +581,22 @@ export default function SubjectDetails() {
       )}
     </Layout>
   );
+}
+
+export async function getServerSideProps({ req, res, params }) {
+  const cookies = req.headers.cookie || '';
+  const hasAuthCookie = cookies.includes('uorganizer_auth_token=');
+  
+  if (!hasAuthCookie) {
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false,
+      },
+    };
+  }
+  
+  return {
+    props: {}
+  };
 }

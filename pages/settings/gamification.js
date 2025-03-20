@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
+import { useAuth } from '../../context/AuthContext';
 import Layout from '../../components/Layout';
 import Head from 'next/head';
 import Link from 'next/link';
@@ -8,7 +8,7 @@ import { toast } from 'react-toastify';
 import { useGamification } from '../../context/GamificationContext';
 
 export default function GamificationSettings() {
-  const { data: session, status } = useSession();
+  const { user, isAuthenticated } = useAuth();
   const router = useRouter();
   const { 
     gamificationEnabled, 
@@ -26,10 +26,10 @@ export default function GamificationSettings() {
   const exportLinkRef = useRef(null);
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
+    if (!isAuthenticated) {
       router.push('/login');
     }
-  }, [status]);
+  }, [isAuthenticated, router]);
 
   const handleResetProgress = () => {
     if (confirm('¿Estás seguro de querer reiniciar todo tu progreso? Esta acción no se puede deshacer.')) {
@@ -332,4 +332,22 @@ export default function GamificationSettings() {
       </div>
     </Layout>
   );
+}
+
+export async function getServerSideProps({ req, res }) {
+  const cookies = req.headers.cookie || '';
+  const hasAuthCookie = cookies.includes('uorganizer_auth_token=');
+  
+  if (!hasAuthCookie) {
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false,
+      },
+    };
+  }
+  
+  return {
+    props: {}
+  };
 }

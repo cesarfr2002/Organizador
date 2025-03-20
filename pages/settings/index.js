@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
+import { useAuth } from '../../context/AuthContext';
 import Layout from '../../components/Layout';
 import Head from 'next/head';
 import Link from 'next/link';
@@ -10,7 +10,7 @@ import { useAutoSchedule } from '../../context/AutoScheduleContext'; // Add this
 import { useTheme as useNextTheme } from 'next-themes';
 
 export default function Settings() {
-  const { data: session, status } = useSession();
+  const { user, isAuthenticated } = useAuth();
   const router = useRouter();
   const { gamificationEnabled, toggleGamification } = useGamification();
   const { theme, setTheme } = useNextTheme();
@@ -23,10 +23,10 @@ export default function Settings() {
   });
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
+    if (!isAuthenticated) {
       router.push('/login');
     }
-  }, [status]);
+  }, [isAuthenticated, router]);
 
   // Fixed function to toggle dark mode
   const handleToggleDarkMode = () => {
@@ -74,7 +74,7 @@ export default function Settings() {
     }
   };
 
-  if (status === 'loading') {
+  if (!isAuthenticated) {
     return (
       <Layout>
         <div className="flex justify-center items-center h-64">
@@ -277,4 +277,22 @@ export default function Settings() {
       </div>
     </Layout>
   );
+}
+
+export async function getServerSideProps({ req, res }) {
+  const cookies = req.headers.cookie || '';
+  const hasAuthCookie = cookies.includes('uorganizer_auth_token=');
+  
+  if (!hasAuthCookie) {
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false,
+      },
+    };
+  }
+  
+  return {
+    props: {}
+  };
 }
