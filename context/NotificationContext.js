@@ -1,210 +1,110 @@
-import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { useSession } from 'next-auth/react';
+import { createContext, useState, useContext, useEffect } from 'react';
+import { useAuth } from './AuthContext';
 
-// Crear el contexto con valores predeterminados para evitar errores
-const NotificationContext = createContext({
-  notifications: [],
-  unreadCount: 0,
-  loading: false,
-  error: null,
-  hasMore: false,
-  fetchNotifications: () => {},
-  markAsRead: () => Promise.resolve(false),
-  markAllAsRead: () => Promise.resolve(false),
-  deleteNotification: () => Promise.resolve(false),
-  addNotification: () => {}
-});
+const NotificationContext = createContext();
 
-export const NotificationProvider = ({ children }) => {
-  const { data: session, status } = useSession();
+export function NotificationProvider({ children }) {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [hasMore, setHasMore] = useState(true);
-  
-  // Referencia para controlar el intervalo de polling
-  const pollingInterval = useRef(null);
+  const { user } = useAuth();
 
-  // Cargar notificaciones desde la API
-  const fetchNotifications = useCallback(async (limit = 10, skip = 0, unreadOnly = false) => {
-    if (status !== 'authenticated') return;
-    
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const res = await fetch(
-        `/api/notifications?limit=${limit}&skip=${skip}&unreadOnly=${unreadOnly}`
-      );
-      
-      if (!res.ok) {
-        throw new Error('Error al cargar notificaciones');
-      }
-      
-      const data = await res.json();
-      
-      if (skip === 0) {
-        setNotifications(data.notifications);
-      } else {
-        setNotifications(prev => [...prev, ...data.notifications]);
-      }
-      
-      setUnreadCount(data.unreadCount);
-      setHasMore(data.hasMore);
-    } catch (err) {
-      console.error('Error fetching notifications:', err);
-      setError('Error al cargar notificaciones');
-    } finally {
-      setLoading(false);
-    }
-  }, [status]);
-  
-  // Comprobar notificaciones nuevas
-  const checkNewNotifications = useCallback(async () => {
-    if (status !== 'authenticated') return;
-    
-    try {
-      const res = await fetch('/api/notifications?limit=1&unreadOnly=true');
-      
-      if (!res.ok) {
-        throw new Error('Error al comprobar notificaciones');
-      }
-      
-      const data = await res.json();
-      
-      // Si el conteo ha cambiado, actualizar las notificaciones
-      if (data.unreadCount !== unreadCount) {
-        fetchNotifications();
-      }
-    } catch (err) {
-      console.error('Error checking new notifications:', err);
-    }
-  }, [status, unreadCount, fetchNotifications]);
-  
-  // Configurar polling para notificaciones
   useEffect(() => {
-    if (status === 'authenticated') {
-      // Iniciar polling cada 30 segundos
-      pollingInterval.current = setInterval(() => {
-        checkNewNotifications();
-      }, 30000); // 30 segundos
-      
-      return () => {
-        if (pollingInterval.current) {
-          clearInterval(pollingInterval.current);
-        }
-      };
-    }
-  }, [status, checkNewNotifications]);
-  
-  // Cargar notificaciones cuando el usuario inicia sesión
-  useEffect(() => {
-    if (status === 'authenticated') {
+    if (user) {
       fetchNotifications();
     }
-  }, [status, fetchNotifications]);
-  
-  // Marcar una notificación como leída
+  }, [user]);
+
+  const fetchNotifications = async () => {
+    try {
+      const response = await fetch('/api/notifications');
+      if (response.ok) {
+        const data = await response.json();
+        setNotifications(data);
+        setUnreadCount(data.filter(notification => !notification.read).length);
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    }
+  };
+
+  const addNotification = async (notification) => {
+    try {
+      const response = await fetch('/api/notifications', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(notification),
+      });
+
+      if (response.ok) {
+        const newNotification = await response.json();
+        setNotifications([...notifications, newNotification]);
+        setUnreadCount(prevCount => prevCount + 1);
+        return newNotification;
+      }
+    } catch (error) {
+      console.error('Error adding notification:', error);
+    }
+    return null;
+  };
+
   const markAsRead = async (id) => {
     try {
-      const res = await fetch(`/api/notifications/${id}`, {
+      const response = await fetch(`/api/notifications/${id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ read: true })
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ read: true }),
       });
-      
-      if (!res.ok) throw new Error('Error al actualizar');
-      
-      // Actualizar estado local
-      setNotifications(prev => 
-        prev.map(notification => 
-          notification._id === id ? { ...notification, read: true } : notification
-        )
-      );
-      
-      setUnreadCount(prev => Math.max(0, prev - 1));
-      
-      return true;
-    } catch (err) {
-      console.error('Error marking notification as read:', err);
-      return false;
+
+      if (response.ok) {
+        setNotifications(
+          notifications.map(notification => 
+            notification._id === id 
+              ? { ...notification, read: true } 
+              : notification
+          )
+        );
+        setUnreadCount(prevCount => Math.max(0, prevCount - 1));
+      }
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
     }
   };
-  
-  // Marcar todas las notificaciones como leídas
-  const markAllAsRead = async () => {
-    try {
-      const res = await fetch('/api/notifications/read-all', {
-        method: 'POST',
-      });
-      
-      if (!res.ok) throw new Error('Error al actualizar');
-      
-      // Actualizar estado local
-      setNotifications(prev => 
-        prev.map(notification => ({ ...notification, read: true }))
-      );
-      
-      setUnreadCount(0);
-      
-      return true;
-    } catch (err) {
-      console.error('Error marking all notifications as read:', err);
-      return false;
-    }
-  };
-  
-  // Eliminar una notificación
+
   const deleteNotification = async (id) => {
     try {
-      const res = await fetch(`/api/notifications/${id}`, {
-        method: 'DELETE'
+      const response = await fetch(`/api/notifications/${id}`, {
+        method: 'DELETE',
       });
-      
-      if (!res.ok) throw new Error('Error al eliminar');
-      
-      // Actualizar estado local
-      const notification = notifications.find(n => n._id === id);
-      setNotifications(prev => prev.filter(n => n._id !== id));
-      
-      if (notification && !notification.read) {
-        setUnreadCount(prev => Math.max(0, prev - 1));
+
+      if (response.ok) {
+        const notificationToDelete = notifications.find(n => n._id === id);
+        setNotifications(notifications.filter(notification => notification._id !== id));
+        
+        if (notificationToDelete && !notificationToDelete.read) {
+          setUnreadCount(prevCount => Math.max(0, prevCount - 1));
+        }
       }
-      
-      return true;
-    } catch (err) {
-      console.error('Error deleting notification:', err);
-      return false;
-    }
-  };
-  
-  // Crear una nueva notificación (sólo actualiza la UI, la lógica real debe estar en el servidor)
-  const addNotification = (notification) => {
-    setNotifications(prev => [notification, ...prev]);
-    if (!notification.read) {
-      setUnreadCount(prev => prev + 1);
+    } catch (error) {
+      console.error('Error deleting notification:', error);
     }
   };
 
   return (
-    <NotificationContext.Provider
-      value={{
-        notifications,
-        unreadCount,
-        loading,
-        error,
-        hasMore,
-        fetchNotifications,
-        markAsRead,
-        markAllAsRead,
-        deleteNotification,
-        addNotification
-      }}
-    >
+    <NotificationContext.Provider value={{ 
+      notifications, 
+      unreadCount, 
+      fetchNotifications, 
+      addNotification, 
+      markAsRead, 
+      deleteNotification 
+    }}>
       {children}
     </NotificationContext.Provider>
   );
-};
+}
 
 export const useNotifications = () => useContext(NotificationContext);

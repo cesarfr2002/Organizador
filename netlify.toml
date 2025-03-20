@@ -10,3 +10,13 @@
 
 [functions]
   included_files = ["public/*", "!node_modules/next/dist/compiled/webpack/bundle5.js"]
+
+[dev]
+  command = "npm run dev"
+  targetPort = 3000
+  autoLaunch = true
+  framework = "next"
+
+[template.environment]
+  MONGODB_URI = "mongodb connection string"
+  JWT_SECRET = "your-jwt-secret"
