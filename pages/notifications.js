@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import Layout from '../components/Layout';
 import NotificationList from '../components/notifications/NotificationList';
@@ -6,19 +6,25 @@ import { useNotifications } from '../context/NotificationContext';
 import { Tab } from '@headlessui/react';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from './api/auth/[...nextauth]';
-import { useSession } from 'next-auth/react';
+import { useAuth } from '../context/AuthContext';
 
-export default function NotificationsPage() {
+export default function Notifications() {
   const [selectedTab, setSelectedTab] = useState(0);
   const { unreadCount } = useNotifications();
-  const { status } = useSession();
+  const { user, isAuthenticated } = useAuth();
   
   const handleTabChange = (index) => {
     setSelectedTab(index);
   };
 
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      fetchNotifications();
+    }
+  }, [user, isAuthenticated]);
+
   // Mostrar pantalla de carga si la sesión se está verificando
-  if (status === 'loading') {
+  if (!isAuthenticated) {
     return (
       <Layout>
         <div className="flex justify-center items-center h-screen">

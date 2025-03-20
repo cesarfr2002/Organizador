@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { useSession } from 'next-auth/react';
+import { useAuth } from './AuthContext';
 
 // Crear el contexto con valores predeterminados para evitar errores
 const NotificationContext = createContext({
@@ -16,7 +16,7 @@ const NotificationContext = createContext({
 });
 
 export const NotificationProvider = ({ children }) => {
-  const { data: session, status } = useSession();
+  const { user, isAuthenticated } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -28,7 +28,7 @@ export const NotificationProvider = ({ children }) => {
 
   // Cargar notificaciones desde la API
   const fetchNotifications = useCallback(async (limit = 10, skip = 0, unreadOnly = false) => {
-    if (status !== 'authenticated') return;
+    if (!isAuthenticated || !user) return;
     
     try {
       setLoading(true);
@@ -58,11 +58,11 @@ export const NotificationProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [status]);
+  }, [isAuthenticated, user]);
   
   // Comprobar notificaciones nuevas
   const checkNewNotifications = useCallback(async () => {
-    if (status !== 'authenticated') return;
+    if (!isAuthenticated || !user) return;
     
     try {
       const res = await fetch('/api/notifications?limit=1&unreadOnly=true');
@@ -80,11 +80,11 @@ export const NotificationProvider = ({ children }) => {
     } catch (err) {
       console.error('Error checking new notifications:', err);
     }
-  }, [status, unreadCount, fetchNotifications]);
+  }, [isAuthenticated, user, unreadCount, fetchNotifications]);
   
   // Configurar polling para notificaciones
   useEffect(() => {
-    if (status === 'authenticated') {
+    if (isAuthenticated && user) {
       // Iniciar polling cada 30 segundos
       pollingInterval.current = setInterval(() => {
         checkNewNotifications();
@@ -96,14 +96,14 @@ export const NotificationProvider = ({ children }) => {
         }
       };
     }
-  }, [status, checkNewNotifications]);
+  }, [isAuthenticated, user, checkNewNotifications]);
   
   // Cargar notificaciones cuando el usuario inicia sesión
   useEffect(() => {
-    if (status === 'authenticated') {
-      fetchNotifications();
+    if (isAuthenticated && user) {
+      fetchNotifications(user.id);
     }
-  }, [status, fetchNotifications]);
+  }, [isAuthenticated, user, fetchNotifications]);
   
   // Marcar una notificación como leída
   const markAsRead = async (id) => {

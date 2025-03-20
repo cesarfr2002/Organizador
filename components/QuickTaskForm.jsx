@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { useAuth } from '../context/AuthContext';
 import { useRouter } from 'next/router';
 import DatePicker, { registerLocale } from 'react-datepicker';
 import { es } from 'date-fns/locale';
@@ -9,8 +9,8 @@ import { toast } from 'react-toastify';
 // Registrar el locale español
 registerLocale('es', es);
 
-export default function QuickTaskForm({ onSuccess }) {
-  const { data: session, status } = useSession();
+const QuickTaskForm = ({ onClose, onSuccess }) => {
+  const { user } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [subjects, setSubjects] = useState([]);
@@ -26,10 +26,10 @@ export default function QuickTaskForm({ onSuccess }) {
 
   // Cargar asignaturas cuando se monta el componente
   useEffect(() => {
-    if (status === 'authenticated') {
+    if (user) {
       fetchSubjects();
     }
-  }, [status]);
+  }, [user]);
 
   const fetchSubjects = async () => {
     try {
@@ -266,4 +266,6 @@ export default function QuickTaskForm({ onSuccess }) {
       </form>
     </div>
   );
-}
+};
+
+export default QuickTaskForm;

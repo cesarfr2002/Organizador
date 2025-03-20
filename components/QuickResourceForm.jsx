@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { useAuth } from '../context/AuthContext';
 import { useRouter } from 'next/router';
 import { toast } from 'react-toastify';
 
-export default function QuickResourceForm() {
-  const { data: session, status } = useSession();
+const QuickResourceForm = ({ onClose, onSuccess }) => {
+  const { user } = useAuth();
   const router = useRouter();
   const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -18,10 +18,10 @@ export default function QuickResourceForm() {
   });
 
   useEffect(() => {
-    if (status === 'authenticated') {
+    if (user) {
       fetchSubjects();
     }
-  }, [status]);
+  }, [user]);
 
   const fetchSubjects = async () => {
     try {
@@ -54,6 +54,7 @@ export default function QuickResourceForm() {
     setLoading(true);
     
     try {
+      const userId = user?.id;
       const res = await fetch(`/api/subjects/${formData.subject}/resources`, {
         method: 'POST',
         headers: {
@@ -202,4 +203,6 @@ export default function QuickResourceForm() {
       </form>
     </div>
   );
-}
+};
+
+export default QuickResourceForm;
