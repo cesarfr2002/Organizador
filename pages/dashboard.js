@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { useAuth } from '../context/AuthContext';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
@@ -11,7 +11,7 @@ import { es } from 'date-fns/locale';
 import { toast } from 'react-toastify';
 
 export default function Dashboard() {
-  const { data: session, status } = useSession();
+  const { user, isAuthenticated } = useAuth();
   const router = useRouter();
   const [upcomingTasks, setUpcomingTasks] = useState([]);
   const [overdueCount, setOverdueCount] = useState(0);
@@ -21,15 +21,15 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
+    if (!isAuthenticated) {
       router.push('/login');
       return;
     }
 
-    if (status === 'authenticated') {
+    if (isAuthenticated) {
       fetchData();
     }
-  }, [status, router]);
+  }, [isAuthenticated, router]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -79,7 +79,7 @@ export default function Dashboard() {
       });
     };
     
-    if (status === 'authenticated') {
+    if (isAuthenticated) {
       checkWelcome();
       
       // También podemos verificar las tareas pendientes en el dashboard
@@ -110,7 +110,7 @@ export default function Dashboard() {
       // Ejecutar verificación de tareas con un pequeño retraso
       setTimeout(verifyTasks, 3000);
     }
-  }, [status]);
+  }, [isAuthenticated]);
 
   return (
     <Layout>
@@ -331,4 +331,23 @@ export default function Dashboard() {
       </div>
     </Layout>
   );
+}
+
+export async function getServerSideProps({ req, res }) {
+  // Check for the auth cookie directly
+  const cookies = req.headers.cookie || '';
+  const hasAuthCookie = cookies.includes('uorganizer_auth_token=');
+  
+  if (!hasAuthCookie) {
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false,
+      },
+    };
+  }
+  
+  return {
+    props: {}
+  };
 }

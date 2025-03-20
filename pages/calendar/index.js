@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { useAuth } from '../../context/AuthContext';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Layout from '../../components/Layout';
@@ -46,7 +46,7 @@ const formatTime = (timeString) => {
 };
 
 export default function CalendarView() {
-  const { data: session, status } = useSession();
+  const { user, isAuthenticated } = useAuth();
   const router = useRouter();
   const [date, setDate] = useState(new Date());
   const [events, setEvents] = useState([]);
@@ -59,18 +59,18 @@ export default function CalendarView() {
   const [displayedMonth, setDisplayedMonth] = useState(new Date()); // Para la navegación del calendario
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
+    if (!isAuthenticated) {
       router.push('/login');
       return;
     }
     
-    if (status === 'authenticated') {
+    if (isAuthenticated) {
       fetchEvents();
       fetchTasks();
       // Inicializar el día seleccionado como hoy
       setSelectedDay(new Date());
     }
-  }, [status, router]);
+  }, [isAuthenticated, router]);
 
   useEffect(() => {
     if (selectedDay) {
@@ -725,4 +725,23 @@ export default function CalendarView() {
       `}</style>
     </Layout>
   );
+}
+
+export async function getServerSideProps({ req, res }) {
+  // Check for the auth cookie directly
+  const cookies = req.headers.cookie || '';
+  const hasAuthCookie = cookies.includes('uorganizer_auth_token=');
+  
+  if (!hasAuthCookie) {
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false,
+      },
+    };
+  }
+  
+  return {
+    props: {}
+  };
 }

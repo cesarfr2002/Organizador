@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { useSession } from 'next-auth/react';
+import { useAuth } from '../context/AuthContext';
 import Layout from '../components/Layout';
 import Head from 'next/head';
 import { useAutoSchedule } from '../context/AutoScheduleContext';
@@ -9,7 +9,7 @@ import { format, parseISO, addDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 export default function AutoSchedule() {
-  const { data: session, status } = useSession();
+  const { user, isAuthenticated } = useAuth();
   const router = useRouter();
   const { 
     autoScheduleEnabled, 
@@ -28,7 +28,7 @@ export default function AutoSchedule() {
   
   // Fetch pending tasks
   useEffect(() => {
-    if (status === 'unauthenticated') {
+    if (!isAuthenticated) {
       router.push('/login');
       return;
     }
@@ -52,10 +52,10 @@ export default function AutoSchedule() {
       }
     }
     
-    if (status === 'authenticated') {
+    if (isAuthenticated) {
       fetchData();
     }
-  }, [status, router]);
+  }, [isAuthenticated, router]);
   
   // Manually regenerate schedule
   const handleRegenerateSchedule = async () => {
@@ -361,4 +361,23 @@ export default function AutoSchedule() {
       )}
     </Layout>
   );
+}
+
+export async function getServerSideProps({ req, res }) {
+  // Check for the auth cookie directly
+  const cookies = req.headers.cookie || '';
+  const hasAuthCookie = cookies.includes('uorganizer_auth_token=');
+  
+  if (!hasAuthCookie) {
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false,
+      },
+    };
+  }
+  
+  return {
+    props: {}
+  };
 }

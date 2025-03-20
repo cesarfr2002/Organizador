@@ -4,8 +4,6 @@ import Layout from '../components/Layout';
 import NotificationList from '../components/notifications/NotificationList';
 import { useNotifications } from '../context/NotificationContext';
 import { Tab } from '@headlessui/react';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from './api/auth/[...nextauth]';
 import { useAuth } from '../context/AuthContext';
 
 export default function Notifications() {
@@ -85,9 +83,10 @@ export default function Notifications() {
 }
 
 export async function getServerSideProps({ req, res }) {
-  const session = await getServerSession(req, res, authOptions);
+  const cookies = req.headers.cookie || '';
+  const hasAuthCookie = cookies.includes('uorganizer_auth_token=');
   
-  if (!session) {
+  if (!hasAuthCookie) {
     return {
       redirect: {
         destination: '/login',
