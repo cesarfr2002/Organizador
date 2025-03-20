@@ -4,7 +4,17 @@
 
 [build.environment]
   NEXT_PUBLIC_NETLIFY_IDENTITY_ENABLED = "true"
-  NETLIFY_USE_NETLIFY_EDGE = "true"
+  NEXT_PUBLIC_NETLIFY_URL = "https://uorganizer.netlify.app"
+  NEXT_PUBLIC_NEXTAUTH_URL = "https://uorganizer.netlify.app"
+  NEXTAUTH_URL = "https://uorganizer.netlify.app"
+  NODE_ENV = "production"
+
+# Identity settings
+[dev]
+  command = "npm run dev"
+  functions = ".netlify/functions"
+  publish = ".next"
+  autoLaunch = true
 
 # Handle redirects for client-side routes
 [[redirects]]

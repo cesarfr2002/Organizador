@@ -1,101 +1,64 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../context/AuthContext';
-import { signIn } from 'next-auth/react';
 import Head from 'next/head';
 
 export default function Login() {
   const router = useRouter();
-  // Use safe destructuring with defaults
   const auth = useAuth();
-  const user = auth?.user;
-  const login = auth?.login;
-  const register = auth?.register;
   
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   
   useEffect(() => {
     console.log('Login page loaded');
-    console.log('Environment in login page:', process.env.NODE_ENV);
-    console.log('NEXTAUTH_URL in login page:', process.env.NEXT_PUBLIC_NEXTAUTH_URL);
+    console.log('Environment variables:', {
+      NEXT_PUBLIC_NETLIFY_URL: process.env.NEXT_PUBLIC_NETLIFY_URL,
+      NEXT_PUBLIC_NEXTAUTH_URL: process.env.NEXT_PUBLIC_NEXTAUTH_URL,
+      NODE_ENV: process.env.NODE_ENV
+    });
     
-    // Check if we already have a user and auth is available (client-side only)
-    if (typeof window !== 'undefined' && user) {
-      console.log('Current user in login page:', user);
+    // Check if user is already logged in
+    if (auth?.user) {
       console.log('User already logged in, redirecting to dashboard');
       router.push('/dashboard');
     }
-  }, [user, router]);
+  }, [auth?.user, router]);
 
-  const handleNetlifyLogin = async () => {
-    if (!login) {
-      console.error('Login function not available');
-      setError('Authentication service not available');
-      return;
-    }
-    
-    console.log('Starting Netlify login process');
+  const handleLogin = async () => {
+    console.log('Starting login process');
     setIsLoading(true);
     setError('');
     
     try {
+      if (!auth || !auth.login) {
+        throw new Error('Authentication service not available');
+      }
+      
       console.log('Calling login function');
-      const user = await login();
+      const user = await auth.login();
       console.log('Login result:', user);
       
       if (user) {
         console.log('Login successful, redirecting...');
         router.push('/dashboard');
+      } else {
+        setError('Login failed. Please try again.');
       }
     } catch (error) {
       console.error('Login error:', error);
-      setError('Failed to login. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleNextAuthLogin = async () => {
-    console.log('Starting NextAuth login process');
-    setIsLoading(true);
-    setError('');
-    
-    try {
-      console.log('NextAuth credentials config:', {
-        callbackUrl: router.query.callbackUrl || '/dashboard',
-        redirect: true
-      });
-      
-      const result = await signIn('credentials', {
-        redirect: false,
-        // Add your credentials here
-      });
-      
-      console.log('NextAuth login result:', result);
-      
-      if (result?.error) {
-        console.error('NextAuth error:', result.error);
-        setError(result.error);
-      } else if (result?.url) {
-        console.log('NextAuth redirect URL:', result.url);
-        router.push(result.url);
-      }
-    } catch (error) {
-      console.error('NextAuth exception:', error);
-      setError('An unexpected error occurred');
+      setError(error.message || 'Failed to login. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleRegister = () => {
-    if (!register) {
-      console.error('Register function not available');
+    if (!auth || !auth.register) {
       setError('Registration service not available');
       return;
     }
-    register();
+    auth.register();
   };
 
   return (
@@ -113,8 +76,8 @@ export default function Login() {
         )}
         
         <button
-          onClick={handleNetlifyLogin}
-          disabled={isLoading || !login}
+          onClick={handleLogin}
+          disabled={isLoading}
           className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 mb-4"
         >
           {isLoading ? 'Cargando...' : 'Ingresar con Netlify Identity'}
@@ -124,7 +87,6 @@ export default function Login() {
           ¿No tienes una cuenta?{' '}
           <button
             onClick={handleRegister}
-            disabled={!register}
             className="text-blue-600 hover:underline"
           >
             Regístrate

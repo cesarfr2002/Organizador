@@ -1,8 +1,5 @@
 import { createContext, useState, useEffect, useContext } from 'react';
 
-// Only import Netlify Identity widget on the client side
-let netlifyIdentity = null;
-
 // Create the context with a default value
 const AuthContext = createContext({
   user: null,
@@ -14,12 +11,10 @@ const AuthContext = createContext({
 
 export function AuthProvider({ children }) {
   console.log('AuthProvider initializing...');
-  console.log('ENV:', process.env.NODE_ENV);
-  console.log('NEXTAUTH_URL:', process.env.NEXTAUTH_URL);
   
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [netlifyLoaded, setNetlifyLoaded] = useState(false);
+  const [netlifyIdentity, setNetlifyIdentity] = useState(null);
 
   // Load Netlify Identity only on the client side
   useEffect(() => {
@@ -32,45 +27,50 @@ export function AuthProvider({ children }) {
       return;
     }
     
-    // Dynamically import Netlify Identity widget
-    import('netlify-identity-widget')
-      .then((module) => {
-        netlifyIdentity = module.default;
+    // Safer approach to import
+    const loadNetlifyIdentity = async () => {
+      try {
+        // Use require with a direct assignment to prevent class instantiation issues
+        const netlifyIdentityModule = await import('netlify-identity-widget');
+        const identity = netlifyIdentityModule.default;
+        
         console.log('Successfully imported netlify-identity-widget');
         
-        try {
-          // Initialize Netlify Identity
-          netlifyIdentity.init();
-          console.log('Netlify Identity initialized');
-          
-          // Set current user if exists
-          const currentUser = netlifyIdentity.currentUser();
-          console.log('Current user from Netlify Identity:', currentUser);
-          setUser(currentUser);
-          
-          // Configure listeners
-          netlifyIdentity.on("login", (user) => {
-            console.log('Login event triggered, user:', user);
-            setUser(user);
-            netlifyIdentity.close();
-          });
-          
-          netlifyIdentity.on("logout", () => {
-            console.log('Logout event triggered');
-            setUser(null);
-          });
-          
-          setNetlifyLoaded(true);
-        } catch (error) {
-          console.error('Error in Netlify Identity setup:', error);
-        } finally {
-          setLoading(false);
-        }
-      })
-      .catch((error) => {
-        console.error('Failed to import netlify-identity-widget:', error);
+        // Store the identity object in state
+        setNetlifyIdentity(identity);
+        
+        // Initialize after setting to state
+        identity.init({
+          APIUrl: process.env.NEXT_PUBLIC_NETLIFY_URL || 'https://uorganizer.netlify.app/.netlify/identity'
+        });
+        
+        console.log('Netlify Identity initialized');
+        
+        // Set current user if exists
+        const currentUser = identity.currentUser();
+        console.log('Current user from Netlify Identity:', currentUser);
+        setUser(currentUser);
+        
+        // Configure listeners
+        identity.on("login", (user) => {
+          console.log('Login event triggered, user:', user);
+          setUser(user);
+          identity.close();
+        });
+        
+        identity.on("logout", () => {
+          console.log('Logout event triggered');
+          setUser(null);
+        });
+        
         setLoading(false);
-      });
+      } catch (error) {
+        console.error('Error loading Netlify Identity:', error);
+        setLoading(false);
+      }
+    };
+    
+    loadNetlifyIdentity();
       
     // Cleanup function
     return () => {
@@ -83,7 +83,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = async () => {
-    if (!netlifyIdentity || !netlifyLoaded) {
+    if (!netlifyIdentity) {
       console.error('Netlify Identity not loaded');
       return null;
     }
@@ -106,7 +106,7 @@ export function AuthProvider({ children }) {
   };
 
   const logout = async () => {
-    if (!netlifyIdentity || !netlifyLoaded) {
+    if (!netlifyIdentity) {
       console.error('Netlify Identity not loaded');
       return;
     }
@@ -121,7 +121,7 @@ export function AuthProvider({ children }) {
   };
 
   const register = async () => {
-    if (!netlifyIdentity || !netlifyLoaded) {
+    if (!netlifyIdentity) {
       console.error('Netlify Identity not loaded');
       return null;
     }
@@ -143,7 +143,7 @@ export function AuthProvider({ children }) {
     }
   };
 
-  console.log('AuthContext rendering with user:', user, 'netlifyLoaded:', netlifyLoaded);
+  console.log('AuthContext rendering with user:', user);
   return (
     <AuthContext.Provider value={{ user, loading, login, logout, register }}>
       {children}
