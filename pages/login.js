@@ -6,7 +6,12 @@ import Head from 'next/head';
 
 export default function Login() {
   const router = useRouter();
-  const { user, login, register } = useAuth();
+  // Use safe destructuring with defaults
+  const auth = useAuth();
+  const user = auth?.user;
+  const login = auth?.login;
+  const register = auth?.register;
+  
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   
@@ -15,15 +20,21 @@ export default function Login() {
     console.log('Environment in login page:', process.env.NODE_ENV);
     console.log('NEXTAUTH_URL in login page:', process.env.NEXT_PUBLIC_NEXTAUTH_URL);
     
-    // Check if we already have a user
-    console.log('Current user in login page:', user);
-    if (user) {
+    // Check if we already have a user and auth is available (client-side only)
+    if (typeof window !== 'undefined' && user) {
+      console.log('Current user in login page:', user);
       console.log('User already logged in, redirecting to dashboard');
       router.push('/dashboard');
     }
   }, [user, router]);
 
   const handleNetlifyLogin = async () => {
+    if (!login) {
+      console.error('Login function not available');
+      setError('Authentication service not available');
+      return;
+    }
+    
     console.log('Starting Netlify login process');
     setIsLoading(true);
     setError('');
@@ -78,6 +89,15 @@ export default function Login() {
     }
   };
 
+  const handleRegister = () => {
+    if (!register) {
+      console.error('Register function not available');
+      setError('Registration service not available');
+      return;
+    }
+    register();
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <Head>
@@ -94,7 +114,7 @@ export default function Login() {
         
         <button
           onClick={handleNetlifyLogin}
-          disabled={isLoading}
+          disabled={isLoading || !login}
           className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 mb-4"
         >
           {isLoading ? 'Cargando...' : 'Ingresar con Netlify Identity'}
@@ -103,7 +123,8 @@ export default function Login() {
         <p className="text-center text-gray-500 text-sm mt-6">
           ¿No tienes una cuenta?{' '}
           <button
-            onClick={register}
+            onClick={handleRegister}
+            disabled={!register}
             className="text-blue-600 hover:underline"
           >
             Regístrate
