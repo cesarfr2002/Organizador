@@ -1,86 +1,46 @@
-import { NextResponse } from 'next/server'
-import { getToken } from 'next-auth/jwt'
+import { NextResponse } from 'next/server';
+import { verifyToken } from './lib/auth';
 
 export async function middleware(req) {
   try {
-    const path = req.nextUrl.pathname
+    const path = req.nextUrl.pathname;
     console.log('========== MIDDLEWARE EXECUTION ==========');
     console.log('Middleware running for path:', path);
-    console.log('Request URL:', req.url);
-    console.log('Request method:', req.method);
-    console.log('Request headers:', JSON.stringify(Object.fromEntries(req.headers), null, 2));
-    console.log('Cookies present:', !!req.cookies);
     
     // Public paths that don't require authentication
-    const publicPaths = ['/login', '/api/auth', '/404', '/500', '/favicon.ico']
+    const publicPaths = ['/login', '/api/auth', '/404', '/500', '/favicon.ico'];
     const isPublicPath = publicPaths.some(publicPath => 
       path === publicPath || path.startsWith(`${publicPath}/`)
-    )
+    );
     
-    console.log('Is public path?', isPublicPath);
-    
-    // Also bypass static files and API routes (except those that need auth)
+    // Also bypass static files
     if (path.startsWith('/_next/') || 
         path.includes('/static/') || 
         path.match(/\.(png|jpg|jpeg|svg|gif|ico)$/i) ||
         isPublicPath) {
-      console.log('Bypassing auth check for:', path);
-      console.log('========== END MIDDLEWARE (BYPASS) ==========');
-      return NextResponse.next()
+      return NextResponse.next();
     }
     
     // Check if the user is authenticated
-    console.log('Checking authentication token...');
-    const tokenParams = { 
-      req, 
-      secret: process.env.NEXTAUTH_SECRET,
-      secureCookie: process.env.NODE_ENV === 'production'
-    };
-    console.log('Token params - has secret:', !!tokenParams.secret);
-    console.log('Token params - secure cookie:', tokenParams.secureCookie);
-    
-    const token = await getToken(tokenParams);
-    console.log('Authentication token present?', !!token);
+    const token = req.cookies.get('uorganizer_auth_token')?.value;
+    const user = token ? verifyToken(token) : null;
     
     // Redirect unauthenticated users to login
-    if (!token) {
-      console.log('No auth token - redirecting to login');
-      
-      // Create a safe login URL without problematic query parameters
+    if (!user) {
       const loginUrl = new URL('/login', req.url);
-      
-      // Skip adding callback URL as this may be causing issues
-      console.log('Redirecting to:', loginUrl.toString());
-      console.log('========== END MIDDLEWARE (REDIRECT) ==========');
       return NextResponse.redirect(loginUrl);
     }
     
-    console.log('User authenticated, proceeding to requested path');
-    console.log('========== END MIDDLEWARE (AUTHENTICATED) ==========');
     return NextResponse.next();
   } catch (error) {
-    console.error('========== MIDDLEWARE ERROR ==========');
     console.error('Middleware error:', error);
-    console.error('Error name:', error.name);
-    console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
-    console.error('========== END MIDDLEWARE ERROR ==========');
-    // In case of error, allow the request to proceed to avoid blocking legitimate traffic
+    // In case of error, allow the request to proceed
     return NextResponse.next();
   }
 }
 
-// Replace the complex regex matcher with simpler patterns
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - images/ (image files)
-     * - public/ files with image extensions (.png, .jpg, etc)
-     */
     '/((?!_next/static|_next/image|favicon.ico|images).*)',
   ],
-}
+};

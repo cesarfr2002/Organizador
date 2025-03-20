@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
-import { signIn, useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
-import Link from 'next/link';
 import Head from 'next/head';
 import { toast } from 'react-toastify';
+import { useAuth } from '../context/AuthContext';
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
@@ -14,37 +13,14 @@ export default function Login() {
   });
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const { status } = useSession();
+  const { login, register, isAuthenticated } = useAuth();
 
-  // Use useEffect for browser-only code
   useEffect(() => {
-    // Now this will only run on the client side
-    console.log('===== LOGIN COMPONENT DIAGNOSTICS =====');
-    console.log('Login component loaded');
-    console.log('Window location:', window.location.origin);
-    console.log('Full URL:', window.location.href);
-    console.log('Router pathname:', router.pathname);
-    console.log('Router query:', router.query);
-    
-    // Browser and environment info for debugging
-    console.log('User agent:', navigator.userAgent);
-    console.log('Browser cookies enabled:', navigator.cookieEnabled);
-    console.log('Document referrer:', document.referrer);
-    
-    // Add environment variable checks back
-    console.log('ENV check - NEXTAUTH_URL exists:', !!process.env.NEXTAUTH_URL);
-    console.log('ENV check - NEXTAUTH_URL value:', process.env.NEXTAUTH_URL);
-    console.log('ENV check - MONGODB_URI exists:', !!process.env.MONGODB_URI);
-    console.log('ENV check - DEBUG exists:', !!process.env.DEBUG);
-    console.log('ENV check - NEXT_PUBLIC_APP_URL value:', process.env.NEXT_PUBLIC_APP_URL);
-    console.log('===== END LOGIN DIAGNOSTICS =====');
-  }, [router.pathname, router.query]);
-
-  // Redirigir si ya está autenticado
-  if (status === 'authenticated') {
-    router.push('/');
-    return null;
-  }
+    // Redirect if already authenticated
+    if (isAuthenticated) {
+      router.push('/');
+    }
+  }, [isAuthenticated, router]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -55,79 +31,38 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
     
-    if (isLogin) {
-      try {
-        console.log('===== LOGIN ATTEMPT DIAGNOSTICS =====');
-        console.log('Login attempt started');
-        console.log('Form data:', { 
-          email: credentials.email, 
-          password: '***', 
-          passwordLength: credentials.password.length 
-        });
-        console.log('Absolute API path:', `${window.location.origin}/api/auth/callback/credentials`);
+    try {
+      if (isLogin) {
+        // Login
+        const result = await login(credentials.email, credentials.password);
         
-        // Use a simpler signIn call
-        const result = await signIn('credentials', {
-          redirect: false,
-          email: credentials.email,
-          password: credentials.password,
-        });
-        
-        console.log('SignIn result full object:', result ? JSON.stringify(result, null, 2) : 'undefined');
-        console.log('Authentication error:', result?.error);
-        console.log('Authentication successful:', result?.ok);
-        console.log('===== END LOGIN ATTEMPT DIAGNOSTICS =====');
-        
-        if (!result) {
-          console.error('No result from signIn - API may be unavailable');
-          toast.error('Error conectando al servicio de autenticación. Inténtalo más tarde.');
-          setLoading(false);
-          return;
-        }
-        
-        if (result.error) {
-          toast.error(result.error || 'Error al iniciar sesión');
-          setLoading(false);
-        } else if (result.ok) {
+        if (result.success) {
           toast.success('Inicio de sesión exitoso');
           router.push('/');
         } else {
-          toast.error('Error desconocido al iniciar sesión');
+          toast.error(result.error || 'Error al iniciar sesión');
           setLoading(false);
         }
-      } catch (error) {
-        // ...existing error handling...
-      }
-    } else {
-      // Registrar nuevo usuario
-      try {
-        const res = await fetch('/api/auth/register', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(credentials),
-        });
+      } else {
+        // Register
+        const result = await register(
+          credentials.name, 
+          credentials.email, 
+          credentials.password
+        );
         
-        const data = await res.json();
-        
-        if (res.ok) {
-          toast.success('Cuenta creada con éxito. Iniciando sesión...');
-          await signIn('credentials', {
-            redirect: false,
-            email: credentials.email,
-            password: credentials.password,
-          });
+        if (result.success) {
+          toast.success('Cuenta creada con éxito');
           router.push('/');
         } else {
-          toast.error(data.error || 'Error al crear la cuenta');
+          toast.error(result.error || 'Error al crear la cuenta');
           setLoading(false);
         }
-      } catch (error) {
-        console.error('Error al registrar:', error);
-        toast.error('Error al crear la cuenta');
-        setLoading(false);
       }
+    } catch (error) {
+      console.error('Authentication error:', error);
+      toast.error('Error en la autenticación. Inténtalo de nuevo.');
+      setLoading(false);
     }
   };
 
@@ -193,6 +128,7 @@ export default function Login() {
               value={credentials.password}
               onChange={handleChange}
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              autoComplete="current-password"
             />
           </div>
           

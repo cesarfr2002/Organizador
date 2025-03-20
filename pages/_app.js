@@ -1,4 +1,3 @@
-import { SessionProvider } from 'next-auth/react';
 import { ThemeProvider } from 'next-themes';
 import { NotificationProvider } from '../context/NotificationContext';
 import { useEffect } from 'react';
@@ -12,6 +11,7 @@ import RewardNotification from '../components/RewardNotification';
 import GamificationStatus from '../components/GamificationStatus';
 import { ToastContainer } from 'react-toastify';
 import { AutoScheduleProvider } from '../context/AutoScheduleContext';
+import { AuthProvider } from '../context/AuthContext';
 
 function MyApp({ Component, pageProps: { session, ...pageProps } }) {
   // Registrar el service worker para PWA
@@ -31,7 +31,7 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }) {
   }, []);
 
   return (
-    <SessionProvider session={session} refetchInterval={0} refetchOnWindowFocus={false}>
+    <AuthProvider>
       <GamificationProvider>
         <ThemeProvider attribute="class">
           <NotificationProvider>
@@ -59,7 +59,7 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }) {
           </NotificationProvider>
         </ThemeProvider>
       </GamificationProvider>
-    </SessionProvider>
+    </AuthProvider>
   );
 }
 
