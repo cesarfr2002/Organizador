@@ -1,10 +1,139 @@
 import { createContext, useState, useContext, useEffect } from 'react';
+import { useAuth } from './AuthContext';
 import { generateScheduleSuggestions } from '../utils/autoScheduler';
 import { toast } from 'react-toastify';
 
 const AutoScheduleContext = createContext();
 
-export const AutoScheduleProvider = ({ children }) => {
+export function AutoScheduleProvider({ children }) {
+  const { user } = useAuth();
+  const [incompleteTasks, setIncompleteTasks] = useState([]);
+  const [scheduledEvents, setScheduledEvents] = useState([]);
+  const [timePreferences, setTimePreferences] = useState({
+    days: {
+      Lunes: true,
+      Martes: true,
+      Miércoles: true,
+      Jueves: true,
+      Viernes: true,
+      Sábado: false,
+      Domingo: false
+    },
+    timeSlots: {
+      morning: true,
+      afternoon: true,
+      evening: false
+    },
+    breakTime: 15, // minutes between study sessions
+    maxDuration: 120 // maximum duration for a single study session
+  });
+  
+  // Fetch incomplete tasks when user is authenticated
+  useEffect(() => {
+    if (user) {
+      fetchIncompleteTasks();
+    }
+  }, [user]);
+  
+  const fetchIncompleteTasks = async () => {
+    try {
+      const response = await fetch('/api/tasks?status=incomplete');
+      if (response.ok) {
+        const data = await response.json();
+        setIncompleteTasks(data);
+      }
+    } catch (error) {
+      console.error('Error fetching incomplete tasks:', error);
+    }
+  };
+  
+  const updateTaskPriority = async (taskId, newPriority) => {
+    try {
+      // Update local state first for better UX
+      setIncompleteTasks(
+        incompleteTasks.map(task => 
+          task._id === taskId ? { ...task, priority: newPriority } : task
+        )
+      );
+      
+      // Send update to API
+      const response = await fetch(`/api/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ priority: newPriority }),
+      });
+      
+      if (!response.ok) {
+        // If API update fails, revert changes in UI
+        fetchIncompleteTasks();
+        throw new Error('Failed to update task priority');
+      }
+    } catch (error) {
+      console.error('Error updating task priority:', error);
+      throw error;
+    }
+  };
+  
+  const generateSchedule = async () => {
+    try {
+      const response = await fetch('/api/auto-schedule/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          taskIds: incompleteTasks.map(task => task._id),
+          preferences: timePreferences
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to generate schedule');
+      }
+      
+      const data = await response.json();
+      
+      // Format dates for the scheduled events
+      const formattedEvents = data.events.map(event => ({
+        ...event,
+        start: new Date(event.start),
+        end: new Date(event.end)
+      }));
+      
+      setScheduledEvents(formattedEvents);
+      return formattedEvents;
+    } catch (error) {
+      console.error('Error generating schedule:', error);
+      throw error;
+    }
+  };
+  
+  const saveSchedule = async () => {
+    try {
+      const response = await fetch('/api/auto-schedule/save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ events: scheduledEvents }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to save schedule');
+      }
+      
+      // Refresh tasks after saving as they might now be assigned to events
+      fetchIncompleteTasks();
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error saving schedule:', error);
+      throw error;
+    }
+  };
+  
   const [autoScheduleEnabled, setAutoScheduleEnabled] = useState(false);
   const [scheduleSuggestions, setScheduleSuggestions] = useState([]);
   const [lastGeneratedDate, setLastGeneratedDate] = useState(null);
@@ -209,14 +338,20 @@ export const AutoScheduleProvider = ({ children }) => {
         clearScheduleSuggestions,
         lastGeneratedDate,
         generateAndSaveSchedule,
-        isGenerating
+        isGenerating,
+        incompleteTasks,
+        scheduledEvents,
+        timePreferences,
+        setTimePreferences,
+        updateTaskPriority,
+        generateSchedule,
+        saveSchedule,
+        fetchIncompleteTasks
       }}
     >
       {children}
     </AutoScheduleContext.Provider>
   );
-};
+}
 
-export const useAutoSchedule = () => {
-  return useContext(AutoScheduleContext);
-};
+export const useAutoSchedule = () => useContext(AutoScheduleContext);

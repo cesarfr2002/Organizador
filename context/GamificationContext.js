@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useAuth } from './AuthContext';
 
 // Constantes para almacenamiento
 const STORAGE_KEY = 'gamificationSettings';
@@ -226,12 +227,12 @@ const ENCOURAGEMENT_MESSAGES = [
 ];
 
 export function GamificationProvider({ children }) {
+  const { user } = useAuth();
   const [gamificationEnabled, setGamificationEnabled] = useState(true);
   const [points, setPoints] = useState(0);
   const [level, setLevel] = useState(1);
   const [streakDays, setStreakDays] = useState(0);
-  const [lastLogin, setLastLogin] = useState(null);
-  const [achievements, setAchievements] = useState(ACHIEVEMENTS);
+  const [achievements, setAchievements] = useState([]);
   const [dailyChallenge, setDailyChallenge] = useState(null);
   const [completedTasks, setCompletedTasks] = useState(0);
   const [recentReward, setRecentReward] = useState(null);
@@ -709,26 +710,31 @@ export function GamificationProvider({ children }) {
   };
 
   // Enhanced challenge completion
-  const completeChallenge = () => {
+  const completeChallenge = async () => {
     if (!gamificationEnabled || !dailyChallenge || dailyChallenge.completed) return;
     
-    setDailyChallenge(prev => ({ ...prev, completed: true }));
-    awardPoints(dailyChallenge.points, `¡Reto diario completado! +${dailyChallenge.points} pts`);
-    
-    // Update completed challenges counter
-    setCompletedChallenges(prev => {
-      const newCount = prev + 1;
+    try {
+      const response = await fetch('/api/gamification/complete-challenge', {
+        method: 'POST',
+      });
       
-      // Check for challenge-related achievements
-      if (newCount === 1) {
-        unlockAchievement("firstChallenge");
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Update local state
+        setDailyChallenge({
+          ...dailyChallenge,
+          completed: true
+        });
+        
+        // Add points earned from challenge
+        setPoints(prevPoints => prevPoints + (data.pointsEarned || 0));
+        
+        return data;
       }
-      
-      // Update progress for challenge count achievements
-      unlockAchievement("challenges10", 1);
-      
-      return newCount;
-    });
+    } catch (error) {
+      console.error('Error completing challenge:', error);
+    }
   };
   
   // New function to create a note and track achievements
@@ -792,8 +798,22 @@ export function GamificationProvider({ children }) {
   };
 
   // Toggle gamification mode
-  const toggleGamification = () => {
-    setGamificationEnabled(prev => !prev);
+  const toggleGamification = async (enabled) => {
+    try {
+      const response = await fetch('/api/gamification/settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ enabled }),
+      });
+      
+      if (response.ok) {
+        setGamificationEnabled(enabled);
+      }
+    } catch (error) {
+      console.error('Error toggling gamification:', error);
+    }
   };
   
   // Reset all progress

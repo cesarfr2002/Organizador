@@ -1,29 +1,24 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useGamification } from '../context/GamificationContext';
 
 export default function RewardNotification() {
-  const { recentReward, gamificationEnabled } = useGamification();
-  const [isVisible, setIsVisible] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const [message, setMessage] = useState('');
+  const [points, setPoints] = useState(0);
+  const { points: totalPoints } = useGamification();
   
-  useEffect(() => {
-    if (recentReward && gamificationEnabled) {
-      setIsVisible(true);
-      const timer = setTimeout(() => {
-        setIsVisible(false);
-      }, 3000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [recentReward]);
+  // This component will be enhanced later to show animations when points are earned
+  // For now, it's just a placeholder to make the app build successfully
   
-  if (!recentReward || !gamificationEnabled) return null;
-  
-  return (
-    <div 
-      className={`fixed bottom-4 right-4 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white px-4 py-2 rounded-lg shadow-lg transition-all duration-300 flex items-center ${isVisible ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-10'}`}
-    >
-      <div className="mr-3 text-2xl animate-bounce">🎮</div>
-      <div>{recentReward}</div>
+  return visible ? (
+    <div className="fixed bottom-20 right-5 bg-gradient-to-r from-yellow-400 to-yellow-600 text-white p-4 rounded-lg shadow-lg animate-bounce z-50">
+      <div className="flex items-center">
+        <div className="mr-3 text-yellow-200 text-2xl">⭐</div>
+        <div>
+          <div className="font-bold">{message}</div>
+          <div className="text-sm">+{points} puntos</div>
+        </div>
+      </div>
     </div>
-  );
+  ) : null;
 }
