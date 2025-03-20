@@ -1,5 +1,5 @@
 [build]
-  command = "npm run build"
+  command = "npm install && npm run build"
   publish = ".next"
 
 [build.environment]
@@ -8,6 +8,8 @@
   NEXT_PUBLIC_NEXTAUTH_URL = "https://uorganizer.netlify.app"
   NEXTAUTH_URL = "https://uorganizer.netlify.app"
   NODE_ENV = "production"
+  NODE_VERSION = "18"
+  NPM_VERSION = "9"
 
 # Identity settings
 [dev]
