@@ -384,7 +384,6 @@ export default function NotePage({ note }) {
                   Compartir
                 </button>
                 
-                
                 <button
                   onClick={() => window.print()}
                   className="flex items-center px-3 py-1 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600"
@@ -558,4 +557,27 @@ export default function NotePage({ note }) {
       </div>
     </Layout>
   );
+}
+
+export async function getServerSideProps({ req, res, params }) {
+  // Check for auth cookie
+  const cookies = req.headers.cookie || '';
+  const hasAuthCookie = cookies.includes('uorganizer_auth_token=');
+  
+  if (!hasAuthCookie) {
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false,
+      },
+    };
+  }
+  
+  // ...existing note fetching logic...
+  
+  return {
+    props: {
+      note
+    }
+  };
 }
