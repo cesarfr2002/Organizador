@@ -1,0 +1,17 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NEXT_PUBLIC_NETLIFY_IDENTITY_ENABLED = "true"
+  NETLIFY_USE_NETLIFY_EDGE = "true"
+
+# Handle redirects for client-side routes
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Enable Netlify Identity
+[template.environment]
+  NETLIFY_IDENTITY_ENABLED = "true"
