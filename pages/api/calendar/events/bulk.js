@@ -1,46 +1,60 @@
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "../../auth/[...nextauth]";
-import dbConnect from "../../../../lib/dbConnect";
-import Event from "../../../../models/Event";
+import { connectToDatabase } from '../../../../utils/mongodb';
+import { requireAuth } from '../../../../utils/auth';
+import { ObjectId } from 'mongodb';
 
-export default async function handler(req, res) {
-  const session = await getServerSession(req, res, authOptions);
+async function handler(req, res) {
+  // La autenticación se maneja en requireAuth
   
-  if (!session) {
-    return res.status(401).json({ error: 'No autorizado' });
-  }
+  const { method } = req;
   
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', ['POST']);
+  if (method !== 'POST') {
     return res.status(405).json({ error: 'Método no permitido' });
   }
   
-  await dbConnect();
-  const userId = session.user.id;
-  
   try {
-    const { events } = req.body;
+    const { db } = await connectToDatabase();
+    const collection = db.collection('events');
+    const { operation, eventIds } = req.body;
     
-    if (!Array.isArray(events) || events.length === 0) {
-      return res.status(400).json({ error: 'Se requiere un arreglo de eventos no vacío' });
+    if (!operation || !eventIds || !Array.isArray(eventIds)) {
+      return res.status(400).json({ error: 'Parámetros inválidos' });
     }
     
-    // Add userId to each event
-    const eventsWithUserId = events.map(event => ({
-      ...event,
-      userId: userId
-    }));
+    // Convertir string IDs a ObjectIds
+    const objectIds = eventIds.map(id => new ObjectId(id));
     
-    // Insert all events in one operation
-    const result = await Event.insertMany(eventsWithUserId);
+    // Asegurar que solo se modifican eventos del usuario actual
+    const query = {
+      _id: { $in: objectIds },
+      userId: req.user.id
+    };
     
-    return res.status(201).json({
-      message: `${result.length} eventos creados exitosamente`,
-      events: result
-    });
-    
+    switch (operation) {
+      case 'delete':
+        const deleteResult = await collection.deleteMany(query);
+        return res.status(200).json({ 
+          success: true, 
+          deletedCount: deleteResult.deletedCount 
+        });
+        
+      case 'markComplete':
+        const updateResult = await collection.updateMany(
+          query,
+          { $set: { completed: true } }
+        );
+        return res.status(200).json({ 
+          success: true, 
+          modifiedCount: updateResult.modifiedCount 
+        });
+        
+      default:
+        return res.status(400).json({ error: 'Operación no soportada' });
+    }
   } catch (error) {
-    console.error('Error creating events in bulk:', error);
-    return res.status(500).json({ error: 'Error al crear eventos: ' + error.message });
+    console.error('Error en operación masiva de eventos:', error);
+    return res.status(500).json({ error: 'Error interno del servidor' });
   }
 }
+
+// Exportar el handler envuelto en el middleware de autenticación
+export default (req, res) => requireAuth(req, res, handler);

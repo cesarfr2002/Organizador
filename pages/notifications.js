@@ -1,96 +1,105 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import Layout from '../components/Layout';
-import NotificationList from '../components/notifications/NotificationList';
-import { useNotifications } from '../context/NotificationContext';
-import { Tab } from '@headlessui/react';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from './api/auth/[...nextauth]';
-import { useSession } from 'next-auth/react';
+import NotificationItem from '../components/NotificationItem';
+import ProtectedRoute from '../components/ProtectedRoute';
+import { useAuth } from '../context/AuthContext';
 
-export default function NotificationsPage() {
-  const [selectedTab, setSelectedTab] = useState(0);
-  const { unreadCount } = useNotifications();
-  const { status } = useSession();
-  
-  const handleTabChange = (index) => {
-    setSelectedTab(index);
+export default function Notifications() {
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      if (!user) return;
+      
+      try {
+        const res = await fetch('/api/notifications');
+        const data = await res.json();
+        
+        if (res.ok) {
+          setNotifications(data);
+        } else {
+          console.error('Error al cargar notificaciones:', data.error);
+        }
+      } catch (error) {
+        console.error('Error al cargar notificaciones:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNotifications();
+  }, [user]);
+
+  const handleMarkAsRead = async (id) => {
+    try {
+      const res = await fetch(`/api/notifications/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ read: true }),
+      });
+
+      if (res.ok) {
+        setNotifications(
+          notifications.map((notif) =>
+            notif._id === id ? { ...notif, read: true } : notif
+          )
+        );
+      }
+    } catch (error) {
+      console.error('Error al marcar notificación como leída:', error);
+    }
   };
 
-  // Mostrar pantalla de carga si la sesión se está verificando
-  if (status === 'loading') {
-    return (
-      <Layout>
-        <div className="flex justify-center items-center h-screen">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-        </div>
-      </Layout>
-    );
-  }
+  const handleDeleteNotification = async (id) => {
+    try {
+      const res = await fetch(`/api/notifications/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (res.ok) {
+        setNotifications(notifications.filter((notif) => notif._id !== id));
+      }
+    } catch (error) {
+      console.error('Error al eliminar notificación:', error);
+    }
+  };
 
   return (
-    <Layout>
-      <Head>
-        <title>Notificaciones | Organizador</title>
-      </Head>
-      
-      <div className="container mx-auto px-4 py-6">
-        <h1 className="text-2xl font-bold text-gray-800 mb-6">Notificaciones</h1>
-        
-        <div className="mb-6">
-          <Tab.Group selectedIndex={selectedTab} onChange={handleTabChange}>
-            <Tab.List className="flex space-x-1 rounded-md bg-gray-100 p-1">
-              <Tab
-                className={({ selected }) =>
-                  `w-full rounded-md py-2.5 text-sm font-medium leading-5 transition-colors
-                  ${selected
-                    ? 'bg-white shadow text-gray-800'
-                    : 'text-gray-600 hover:bg-white/[0.3] hover:text-gray-700'
-                  }`
-                }
-              >
-                Todas
-              </Tab>
-              <Tab
-                className={({ selected }) =>
-                  `w-full rounded-md py-2.5 text-sm font-medium leading-5 transition-colors
-                  ${selected
-                    ? 'bg-white shadow text-gray-800'
-                    : 'text-gray-600 hover:bg-white/[0.3] hover:text-gray-700'
-                  }`
-                }
-              >
-                No leídas {unreadCount > 0 && `(${unreadCount})`}
-              </Tab>
-            </Tab.List>
-            <Tab.Panels className="mt-4">
-              <Tab.Panel>
-                <NotificationList filter="all" />
-              </Tab.Panel>
-              <Tab.Panel>
-                <NotificationList filter="unread" />
-              </Tab.Panel>
-            </Tab.Panels>
-          </Tab.Group>
+    <ProtectedRoute>
+      <Layout>
+        <Head>
+          <title>Notificaciones | UniOrganizer</title>
+        </Head>
+        <div className="container mx-auto px-4 py-8">
+          <h1 className="text-2xl font-bold mb-6">Notificaciones</h1>
+          
+          {loading ? (
+            <div className="flex justify-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+            </div>
+          ) : notifications.length > 0 ? (
+            <div className="space-y-4">
+              {notifications.map((notification) => (
+                <NotificationItem
+                  key={notification._id}
+                  notification={notification}
+                  onMarkAsRead={handleMarkAsRead}
+                  onDelete={handleDeleteNotification}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+              No tienes notificaciones.
+            </div>
+          )}
         </div>
-      </div>
-    </Layout>
+      </Layout>
+    </ProtectedRoute>
   );
-}
-
-export async function getServerSideProps({ req, res }) {
-  const session = await getServerSession(req, res, authOptions);
-  
-  if (!session) {
-    return {
-      redirect: {
-        destination: '/login',
-        permanent: false,
-      },
-    };
-  }
-  
-  return {
-    props: {}
-  };
 }
