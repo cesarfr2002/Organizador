@@ -1,28 +1,29 @@
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
-import Head from 'next/head';
+import { useAuth } from '../../../context/AuthContext';
 import Layout from '../../../components/Layout';
+import Head from 'next/head';
 import SubjectForm from '../../../components/SubjectForm';
 import { toast } from 'react-toastify';
 
-export default function EditSubject() {
-  const { data: session, status } = useSession();
+export default function EditSubjectPage() {
+  const { user, isAuthenticated } = useAuth();
   const router = useRouter();
   const { id } = router.query;
+  
   const [subject, setSubject] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
+    if (!isAuthenticated) {
       router.push('/login');
       return;
     }
     
-    if (status === 'authenticated' && id) {
+    if (id) {
       fetchSubject();
     }
-  }, [status, router, id]);
+  }, [id, isAuthenticated, router]);
 
   const fetchSubject = async () => {
     setLoading(true);
@@ -42,7 +43,7 @@ export default function EditSubject() {
     }
   };
 
-  if (status === 'loading' || loading) {
+  if (loading) {
     return (
       <Layout>
         <div className="flex justify-center items-center h-64">
@@ -89,4 +90,22 @@ export default function EditSubject() {
       />
     </Layout>
   );
+}
+
+export async function getServerSideProps({ req, res, params }) {
+  const cookies = req.headers.cookie || '';
+  const hasAuthCookie = cookies.includes('uorganizer_auth_token=');
+  
+  if (!hasAuthCookie) {
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false,
+      },
+    };
+  }
+  
+  return {
+    props: {}
+  };
 }

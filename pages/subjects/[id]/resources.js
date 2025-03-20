@@ -1,29 +1,31 @@
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
-import Head from 'next/head';
+import { useAuth } from '../../../context/AuthContext';
 import Layout from '../../../components/Layout';
-import ResourceList from '../../../components/ResourceList';
+import Head from 'next/head';
 import Link from 'next/link';
 import { toast } from 'react-toastify';
 
-export default function SubjectResources() {
-  const { data: session, status } = useSession();
+export default function SubjectResourcesPage() {
+  const { user, isAuthenticated } = useAuth();
   const router = useRouter();
   const { id } = router.query;
+  
   const [subject, setSubject] = useState(null);
+  const [resources, setResources] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
+    if (!isAuthenticated) {
       router.push('/login');
       return;
     }
-
-    if (status === 'authenticated' && id) {
+    
+    if (id) {
       fetchSubject();
+      fetchResources();
     }
-  }, [status, id]);
+  }, [id, isAuthenticated, router]);
 
   const fetchSubject = async () => {
     try {
@@ -41,7 +43,7 @@ export default function SubjectResources() {
     }
   };
 
-  if (status === 'loading' || loading) {
+  if (loading) {
     return (
       <Layout>
         <div className="flex justify-center items-center h-64">
@@ -88,4 +90,22 @@ export default function SubjectResources() {
       <ResourceList subjectId={id} />
     </Layout>
   );
+}
+
+export async function getServerSideProps({ req, res, params }) {
+  const cookies = req.headers.cookie || '';
+  const hasAuthCookie = cookies.includes('uorganizer_auth_token=');
+  
+  if (!hasAuthCookie) {
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false,
+      },
+    };
+  }
+  
+  return {
+    props: {}
+  };
 }

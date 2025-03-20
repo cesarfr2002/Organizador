@@ -1,32 +1,33 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { useSession } from 'next-auth/react';
+import { useAuth } from '../../context/AuthContext';
+import Layout from '../../components/Layout';
+import Head from 'next/head';
+import { toast } from 'react-toastify';
+import Link from 'next/link';
 import { format, isPast, isToday } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { toast } from 'react-toastify';
-import Layout from '../../components/Layout';
 import TaskNotes from '../../components/TaskNotes';
 import TaskResources from '../../components/TaskResources';
-import Link from 'next/link';
-import Head from 'next/head';
 
-export default function TaskDetail() {
-  const { data: session, status } = useSession();
+export default function TaskDetailPage() {
+  const { user, isAuthenticated } = useAuth();
   const router = useRouter();
   const { id } = router.query;
+  
   const [task, setTask] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
+    if (!isAuthenticated) {
       router.push('/login');
       return;
     }
     
-    if (status === 'authenticated' && id) {
+    if (id) {
       fetchTask();
     }
-  }, [status, id, router]);
+  }, [id, isAuthenticated, router]);
 
   const fetchTask = async () => {
     setLoading(true);
@@ -70,7 +71,7 @@ export default function TaskDetail() {
     }
   };
 
-  if (status === 'loading' || loading) {
+  if (loading) {
     return (
       <Layout>
         <div className="flex justify-center items-center h-64">
@@ -253,4 +254,22 @@ export default function TaskDetail() {
       </div>
     </Layout>
   );
+}
+
+export async function getServerSideProps({ req, res, params }) {
+  const cookies = req.headers.cookie || '';
+  const hasAuthCookie = cookies.includes('uorganizer_auth_token=');
+  
+  if (!hasAuthCookie) {
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false,
+      },
+    };
+  }
+  
+  return {
+    props: {}
+  };
 }

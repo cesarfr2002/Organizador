@@ -1,12 +1,18 @@
-import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
-import Head from 'next/head';
+import { useAuth } from '../../context/AuthContext';
 import Layout from '../../components/Layout';
+import Head from 'next/head';
 import SubjectForm from '../../components/SubjectForm';
+import { toast } from 'react-toastify';
 
-export default function NewSubject() {
-  const { data: session, status } = useSession();
+export default function NewSubjectPage() {
+  const { user, isAuthenticated } = useAuth();
   const router = useRouter();
+
+  if (!isAuthenticated) {
+    router.push('/login');
+    return null;
+  }
 
   if (status === 'loading') {
     return (
@@ -16,14 +22,6 @@ export default function NewSubject() {
         </div>
       </Layout>
     );
-  }
-
-  if (!session) {
-    // Redireccionar al login si no hay sesión
-    if (typeof window !== 'undefined') {
-      router.push('/login');
-    }
-    return null;
   }
 
   return (
@@ -42,4 +40,22 @@ export default function NewSubject() {
       <SubjectForm />
     </Layout>
   );
+}
+
+export async function getServerSideProps({ req, res }) {
+  const cookies = req.headers.cookie || '';
+  const hasAuthCookie = cookies.includes('uorganizer_auth_token=');
+  
+  if (!hasAuthCookie) {
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false,
+      },
+    };
+  }
+  
+  return {
+    props: {}
+  };
 }
