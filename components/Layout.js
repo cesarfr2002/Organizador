@@ -5,6 +5,8 @@ import { useTheme as useNextTheme } from 'next-themes';
 import { useState, useEffect } from 'react';
 import NotificationBell from './notifications/NotificationBell';
 import TaskNotificationChecker from './TaskNotificationChecker';
+import Navbar from './Navbar';
+import Head from 'next/head';
 
 // Add motivational quotes array
 const motivationalQuotes = [
@@ -18,7 +20,7 @@ const motivationalQuotes = [
   "Cada día es una nueva oportunidad para cambiar tu vida."
 ];
 
-export default function Layout({ children, hideNavbar = false, hideFooter = false }) {
+export default function Layout({ children, hideNavbar = false, hideFooter = false, title }) {
   const { gamificationEnabled, points, level, streakDays, achievements, dailyChallenge, completeChallenge } = useGamification();
   const { theme, setTheme } = useNextTheme();
   const router = useRouter();
@@ -151,7 +153,11 @@ export default function Layout({ children, hideNavbar = false, hideFooter = fals
   
   return (
     <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-gray-100'}`}>
-      {/* Componente de verificación de notificaciones de tareas */}
+      <Head>
+        <title>{title ? `${title} | UniOrganizer` : 'UniOrganizer'}</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      </Head>
+      
       <TaskNotificationChecker />
       
       <header className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} shadow sticky top-0 z-10`}>
