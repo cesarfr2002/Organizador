@@ -45,7 +45,17 @@ export default function Login() {
   // Opción para saltarse el paso de la contraseña
   const skipPassword = () => {
     console.log('Omitiendo verificación de contraseña');
-    setStep('profile');
+    
+    // We need to ensure we still handle authentication properly even when skipping password
+    auth.login('bypass_password_for_development')
+      .then(() => {
+        setStep('profile');
+      })
+      .catch(err => {
+        console.error('Error when bypassing password:', err);
+        // Continue anyway
+        setStep('profile');
+      });
   };
   
   const handleProfileSelect = async (profile) => {

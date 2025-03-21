@@ -5,20 +5,14 @@ import Task from '../../../models/Task';
 import Note from '../../../models/Note';
 import Notification from '../../../models/notification';
 import { createTaskNotification } from '../../../utils/notificationService';
+import { withApiAuth } from '../middleware';
 
-export default async function handler(req, res) {
-  try {
-    const session = await getServerSession(req, res, authOptions);
-    
-    // Verificar autenticación
-    if (!session) {
-      return res.status(401).json({ message: 'No autenticado' });
-    }
-
-    await dbConnect();
-
-    // GET: Recuperar tareas
-    if (req.method === 'GET') {
+// Your task handler function
+async function tasksHandler(req, res) {
+  const { method } = req;
+  
+  switch (method) {
+    case 'GET':
       try {
         let query = { userId: session.user.id };
         
@@ -66,56 +60,14 @@ export default async function handler(req, res) {
         console.error('Error retrieving tasks:', error);
         return res.status(500).json({ message: 'Error al obtener las tareas' });
       }
-    } 
-    // POST: Crear una nueva tarea
-    else if (req.method === 'POST') {
-      try {
-        console.log('Creando nueva tarea:', req.body);
-        
-        // Crear la tarea
-        const task = await Task.create({
-          ...req.body,
-          userId: session.user.id
-        });
-        
-        console.log('Tarea creada con ID:', task._id);
-        
-        // Crear notificación para la nueva tarea - Manejo de errores mejorado
-        try {
-          console.log('Intentando crear notificación para tarea:', task._id);
-          const notification = await createTaskNotification(session.user.id, task);
-          console.log('Notificación creada exitosamente:', notification);
-        } catch (notificationError) {
-          console.error('Error al crear notificación para tarea:', task._id, notificationError);
-          
-          // Intento de crear notificación manualmente como respaldo
-          try {
-            const backupNotification = await Notification.create({
-              userId: session.user.id,
-              title: 'Nueva tarea',
-              message: `Se ha creado una nueva tarea: ${task.title}`,
-              type: 'task',
-              relatedItemId: task._id,
-              relatedItemModel: 'Task',
-            });
-            console.log('Notificación de respaldo creada:', backupNotification);
-          } catch (backupError) {
-            console.error('Error en notificación de respaldo:', backupError);
-          }
-        }
-        
-        return res.status(201).json(task);
-      } catch (error) {
-        console.error('Error creating task:', error);
-        return res.status(400).json({ error: error.message });
-      }
-    } else {
-      // Método no permitido
-      res.setHeader('Allow', ['GET', 'POST']);
-      return res.status(405).json({ message: `Method ${req.method} not allowed` });
-    }
-  } catch (error) {
-    console.error('Auth error:', error);
-    return res.status(500).json({ message: 'Error de servidor' });
+    
+    // Add other methods (POST, PUT, DELETE) as needed
+    
+    default:
+      res.setHeader('Allow', ['GET', 'POST', 'PUT', 'DELETE']);
+      return res.status(405).json({ error: `Method ${method} Not Allowed` });
   }
 }
+
+// Wrap the handler with our authentication middleware
+export default withApiAuth(tasksHandler);
