@@ -3,18 +3,20 @@ import { NextResponse } from 'next/server';
 export async function middleware(req) {
   const path = req.nextUrl.pathname;
   
-  // Fix the path checking logic - Ensure login path with or without trailing slash is properly excluded
+  // Simple path checking for public routes that don't need authentication
   if (
     path === '/login' || 
     path === '/login/' ||
     path.startsWith('/_next/') ||
     path.startsWith('/api/') ||
-    path.includes('.js') ||
-    path.includes('.json') ||
-    path.includes('.ico') ||
-    path.includes('.png') ||
-    path.includes('.svg') ||
-    path.includes('.css')
+    path.endsWith('.js') ||
+    path.endsWith('.json') ||
+    path.endsWith('.map') ||
+    path.endsWith('.ico') ||
+    path.endsWith('.png') ||
+    path.endsWith('.jpg') ||
+    path.endsWith('.svg') ||
+    path.endsWith('.css')
   ) {
     return NextResponse.next();
   }
@@ -24,7 +26,6 @@ export async function middleware(req) {
   
   // If no session, redirect to login
   if (!sessionCookie) {
-    // Use NextResponse.redirect with absolute URL to avoid path issues
     const url = req.nextUrl.clone();
     url.pathname = '/login';
     url.search = '';
@@ -35,15 +36,21 @@ export async function middleware(req) {
   return NextResponse.next();
 }
 
-// Simplify the matcher to avoid regex issues
+// Use a simple fixed list of paths to apply middleware to instead of a complex regex
 export const config = {
   matcher: [
-    /*
-     * Match all paths except:
-     * 1. /api (API routes)
-     * 2. /_next (Next.js internals)
-     * 3. /static files with extensions (.js, .map, .ico, .png, etc)
-     */
-    '/((?!_next/|api/|.*\\.(js|json|map|ico|png|jpg|svg|css)).*)'
+    '/',
+    '/dashboard',
+    '/dashboard/:path*',
+    '/profile',
+    '/profile/:path*',
+    '/tasks',
+    '/tasks/:path*',
+    '/calendar',
+    '/calendar/:path*',
+    '/notes',
+    '/notes/:path*',
+    '/settings',
+    '/settings/:path*'
   ],
 };
