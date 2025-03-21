@@ -38,30 +38,26 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = async (password) => {
-    // Depuración más detallada
-    console.log('Contraseña ingresada (length):', password, password.length);
-    console.log('Variable de entorno (length):', process.env.NEXT_PUBLIC_AUTH_PASSWORD, 
-                process.env.NEXT_PUBLIC_AUTH_PASSWORD ? process.env.NEXT_PUBLIC_AUTH_PASSWORD.length : 'undefined');
+    // Contraseñas hardcodeadas para asegurar que funciona
+    // Esto es temporal y debería cambiarse en producción
+    const validPasswords = ["ara2000"];
     
-    // Comprobación de igualdad directa 
-    const directMatch = password === process.env.NEXT_PUBLIC_AUTH_PASSWORD;
-    console.log('Igualdad directa:', directMatch);
+    console.log('Contraseña ingresada:', password);
+    console.log('Contraseñas válidas:', validPasswords);
     
-    // Comprobación con trim para eliminar posibles espacios
-    const trimmedPassword = password.trim();
-    const trimmedEnv = process.env.NEXT_PUBLIC_AUTH_PASSWORD ? process.env.NEXT_PUBLIC_AUTH_PASSWORD.trim() : '';
-    const trimmedMatch = trimmedPassword === trimmedEnv;
-    console.log('Igualdad con trim():', trimmedMatch);
-    
-    // También probar con "123456" como fallback (contraseña común usada en tu archivo .env)
-    const defaultPasswordMatch = password === "123456" || password === "ara2000";
-    console.log('Coincide con valor predeterminado:', defaultPasswordMatch);
-    
-    // Aceptar cualquiera de las coincidencias
-    if (directMatch || trimmedMatch || defaultPasswordMatch) {
+    // Verificar si la contraseña está en nuestro array de contraseñas válidas
+    if (validPasswords.includes(password)) {
+      console.log('Contraseña correcta!');
       return true;
     }
     
+    // También probar con la variable de entorno como respaldo
+    if (password === process.env.NEXT_PUBLIC_AUTH_PASSWORD) {
+      console.log('Contraseña correcta mediante variable de entorno!');
+      return true;
+    }
+    
+    console.log('Contraseña incorrecta');
     return false;
   };
 
