@@ -3,6 +3,13 @@ import { useRouter } from 'next/router';
 import { useAuth } from '../context/AuthContext';
 import Head from 'next/head';
 
+// Add this to prevent Next.js from attempting to fetch this page's data
+export const getServerSideProps = () => {
+  return {
+    props: {},
+  };
+};
+
 export default function Login() {
   const [password, setPassword] = useState('');
   const [step, setStep] = useState('password'); // 'password' o 'profile'
@@ -45,14 +52,14 @@ export default function Login() {
     try {
       await auth.selectProfile(profile);
       
-      // Redirigir a la página solicitada o a la página principal
+      // Usar router.replace en lugar de push para evitar problemas de historial
       const callbackUrl = router.query.callbackUrl || '/';
-      router.push(callbackUrl);
+      router.replace(callbackUrl);
     } catch (err) {
       console.error('Profile selection error:', err);
       // Incluso si hay error, intentamos redireccionar
       const callbackUrl = router.query.callbackUrl || '/';
-      router.push(callbackUrl);
+      router.replace('/');
     }
   };
   
@@ -96,6 +103,7 @@ export default function Login() {
                     placeholder="Contraseña"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    autoComplete="off"
                   />
                 </div>
               </div>

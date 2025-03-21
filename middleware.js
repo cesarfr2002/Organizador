@@ -9,34 +9,38 @@ export async function middleware(req) {
     '/api', 
     '/404', 
     '/500', 
+    '/_next',
     '/service-worker.js', 
-    '/manifest.json'
+    '/manifest.json',
+    '/sw.js',
+    '/workbox-',
+    '/worker-'
   ];
   
+  // Check if the current path is public
   const isPublicPath = publicPaths.some((publicPath) => 
-    path === publicPath || path.startsWith(`${publicPath}/`)
+    path === publicPath || path.startsWith(`${publicPath}`)
   );
   
   if (isPublicPath) {
     return NextResponse.next();
   }
   
-  // Solo comprobamos si hay una cookie de sesión simple
+  // Check for session cookie
   const sessionCookie = req.cookies.get('user_session');
   
-  // Si no hay cookie, redirigir al login
+  // If no session, redirect to login
   if (!sessionCookie) {
-    const url = new URL('/login', req.url);
-    url.searchParams.set('callbackUrl', encodeURI(req.url));
-    return NextResponse.redirect(url);
+    // Use replace instead of redirect to avoid issues
+    return NextResponse.redirect(new URL('/login', req.url));
   }
   
   return NextResponse.next();
 }
 
-// Specify which paths middleware should run on
+// Refined matcher to specifically exclude problematic paths
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|icons|images|.*\\.png$).*)',
+    '/((?!_next/static|_next/image|_next/data|favicon.ico|icons|images|sw.js|workbox-|worker-|.*\\.(png|jpg|jpeg|gif|svg)$).*)',
   ],
 };
