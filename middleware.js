@@ -3,26 +3,16 @@ import { NextResponse } from 'next/server';
 export async function middleware(req) {
   const path = req.nextUrl.pathname;
   
-  // Public paths that don't require authentication
-  const publicPaths = [
-    '/login', 
-    '/api', 
-    '/404', 
-    '/500', 
-    '/_next',
-    '/service-worker.js', 
-    '/manifest.json',
-    '/sw.js',
-    '/workbox-',
-    '/worker-'
-  ];
-  
-  // Check if the current path is public
-  const isPublicPath = publicPaths.some((publicPath) => 
-    path === publicPath || path.startsWith(`${publicPath}`)
-  );
-  
-  if (isPublicPath) {
+  // Always allow access to these paths without authentication
+  if (
+    path === '/login' ||
+    path.startsWith('/_next') ||
+    path.startsWith('/api') ||
+    path.includes('sw.js') ||
+    path.includes('workbox-') ||
+    path.includes('worker-') ||
+    path.includes('manifest.json')
+  ) {
     return NextResponse.next();
   }
   
@@ -31,22 +21,17 @@ export async function middleware(req) {
   
   // If no session, redirect to login
   if (!sessionCookie) {
-    // Use replace instead of redirect to avoid issues
-    return NextResponse.redirect(new URL('/login', req.url));
+    // Create simpler URL to avoid encoding issues
+    const loginUrl = new URL('/login', req.url);
+    loginUrl.searchParams.set('from', path);
+    return NextResponse.redirect(loginUrl);
   }
   
   return NextResponse.next();
 }
 
-// Fix the matcher to use a simpler pattern without capturing groups
 export const config = {
   matcher: [
-    '/',
-    '/dashboard/:path*',
-    '/profile/:path*',
-    '/tasks/:path*',
-    '/calendar/:path*',
-    '/notes/:path*',
-    '/settings/:path*'
+    '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 };
