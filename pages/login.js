@@ -15,14 +15,23 @@ export default function Login() {
   // Use useEffect to handle client-side only code
   useEffect(() => {
     setIsClient(true);
+    // Depuración: verificar si las variables de entorno se cargan
+    console.log('Variables de entorno en Login (useEffect):');
+    console.log('NEXT_PUBLIC_AUTH_PASSWORD presente:', !!process.env.NEXT_PUBLIC_AUTH_PASSWORD);
+    console.log('Valor:', process.env.NEXT_PUBLIC_AUTH_PASSWORD);
   }, []);
   
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
     setError('');
     
+    // Depuración: Ver qué se está enviando
+    console.log('Intentando login con contraseña:', password);
+    
     try {
       const success = await auth.login(password);
+      console.log('Resultado del login:', success);
+      
       if (success) {
         setStep('profile');
       } else {

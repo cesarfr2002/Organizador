@@ -38,6 +38,11 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = async (password) => {
+    // Depuración: mostrar contraseña ingresada y variable de entorno
+    console.log('Contraseña ingresada:', password);
+    console.log('Variable de entorno NEXT_PUBLIC_AUTH_PASSWORD:', process.env.NEXT_PUBLIC_AUTH_PASSWORD);
+    console.log('¿Coinciden?', password === process.env.NEXT_PUBLIC_AUTH_PASSWORD);
+    
     // Verificar si la contraseña coincide con la variable de entorno
     if (password === process.env.NEXT_PUBLIC_AUTH_PASSWORD) {
       return true;
