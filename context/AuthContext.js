@@ -1,6 +1,13 @@
 import { createContext, useState, useEffect, useContext } from 'react';
 
-const AuthContext = createContext(null);
+// Provide default values to avoid null errors during server-side rendering
+const AuthContext = createContext({
+  user: null,
+  loading: true,
+  login: () => Promise.resolve(false),
+  selectProfile: () => Promise.resolve({}),
+  logout: () => Promise.resolve()
+});
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -9,15 +16,19 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     // Verificar si hay una sesión guardada en las cookies
     const checkSession = () => {
-      const sessionCookie = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('user_session='));
-      
-      if (sessionCookie) {
-        const sessionData = JSON.parse(
-          decodeURIComponent(sessionCookie.split('=')[1])
-        );
-        setUser(sessionData);
+      try {
+        const sessionCookie = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('user_session='));
+        
+        if (sessionCookie) {
+          const sessionData = JSON.parse(
+            decodeURIComponent(sessionCookie.split('=')[1])
+          );
+          setUser(sessionData);
+        }
+      } catch (error) {
+        console.error('Error checking session:', error);
       }
       
       setLoading(false);

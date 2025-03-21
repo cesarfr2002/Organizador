@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../context/AuthContext';
 import Head from 'next/head';
@@ -7,28 +7,59 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [step, setStep] = useState('password'); // 'password' o 'profile'
   const [error, setError] = useState('');
-  const { login, selectProfile } = useAuth();
+  const [isClient, setIsClient] = useState(false);
+  
   const router = useRouter();
+  const auth = useAuth();
+  
+  // Use useEffect to handle client-side only code
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
   
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
     setError('');
     
-    const success = await login(password);
-    if (success) {
-      setStep('profile');
-    } else {
-      setError('Contraseña incorrecta');
+    try {
+      const success = await auth.login(password);
+      if (success) {
+        setStep('profile');
+      } else {
+        setError('Contraseña incorrecta');
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('Error al iniciar sesión');
     }
   };
   
   const handleProfileSelect = async (profile) => {
-    await selectProfile(profile);
-    
-    // Redirigir a la página solicitada o a la página principal
-    const callbackUrl = router.query.callbackUrl || '/';
-    router.push(callbackUrl);
+    try {
+      await auth.selectProfile(profile);
+      
+      // Redirigir a la página solicitada o a la página principal
+      const callbackUrl = router.query.callbackUrl || '/';
+      router.push(callbackUrl);
+    } catch (err) {
+      console.error('Profile selection error:', err);
+      setError('Error al seleccionar perfil');
+    }
   };
+  
+  // Only render content on the client side
+  if (!isClient) {
+    return (
+      <>
+        <Head>
+          <title>Login - Organizador</title>
+        </Head>
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <div className="text-center">Cargando...</div>
+        </div>
+      </>
+    );
+  }
   
   return (
     <>
