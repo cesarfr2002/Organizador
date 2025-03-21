@@ -38,9 +38,15 @@ export async function middleware(req) {
   return NextResponse.next();
 }
 
-// Refined matcher to specifically exclude problematic paths
+// Fix the matcher to use a simpler pattern without capturing groups
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|_next/data|favicon.ico|icons|images|sw.js|workbox-|worker-|.*\\.(png|jpg|jpeg|gif|svg)$).*)',
+    '/',
+    '/dashboard/:path*',
+    '/profile/:path*',
+    '/tasks/:path*',
+    '/calendar/:path*',
+    '/notes/:path*',
+    '/settings/:path*'
   ],
 };
