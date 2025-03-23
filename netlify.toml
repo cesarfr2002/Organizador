@@ -2,27 +2,27 @@
   command = "npm install --production=false --legacy-peer-deps && npm run build"
   publish = ".next"
 
-# Enable Next.js Runtime - this is critical for API routes to work
+# Enable Next.js Runtime
 [build.environment]
   NEXT_TELEMETRY_DISABLED = "1"
   NODE_ENV = "production"
   NETLIFY_NEXT_PLUGIN_SKIP = "false"
 
-# Needed for NextAuth.js and API routes to work properly
+# Function configuration
 [functions]
   included_files = ["node_modules/mongodb/**", "node_modules/@auth/**", "node_modules/bcryptjs/**", "node_modules/next-auth/**", "node_modules/tailwindcss/**"]
   node_bundler = "esbuild"
 
-# IMPORTANT: Don't use custom redirects for Next.js API routes
-# Let the Next.js plugin handle all routing
+# Critical: Use Netlify plugin for Next.js handling
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
 
-# For SPA navigation - this must be LAST and should only catch non-api routes
-[[redirects]]
-  from = "/*"
-  to = "/.netlify/functions/___netlify-handler"
-  status = 200
-  force = false
-  
+# No custom redirects needed - plugin handles this automatically
+
+# Log environment variables
+[build.processing]
+  skip_processing = false
+
 # Environment Variables
 [template.environment]
   MONGODB_URI = "MongoDB connection string"
