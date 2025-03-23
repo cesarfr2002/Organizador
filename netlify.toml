@@ -2,16 +2,38 @@
   command = "npm run build"
   publish = ".next"
 
+# Include all environment variables
+[build.environment]
+  NEXT_TELEMETRY_DISABLED = "1"
+  NODE_ENV = "production"
+
 # Needed for NextAuth.js and API routes to work properly
 [functions]
-  included_files = ["node_modules/mongodb/**", "node_modules/@auth/**"]
-  
-# Handle routing for SPA client-side navigation
+  included_files = ["node_modules/mongodb/**", "node_modules/@auth/**", "node_modules/bcryptjs/**", "node_modules/next-auth/**"]
+  node_bundler = "esbuild"
+
+# Properly redirect API requests before the catch-all
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/next-api/:splat"
+  status = 200
+  force = true
+
+# Ensure JSON content type is preserved
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Content-Type = "application/json"
+    X-Content-Type-Options = "nosniff"
+
+# For SPA navigation - this should be last
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
-
-# Environment variable inheritance
-[build.environment]
-  NEXT_TELEMETRY_DISABLED = "1"
+  
+# This helps catch issues with environment variable propagation
+[template.environment]
+  MONGODB_URI = "MongoDB connection string"
+  NEXTAUTH_SECRET = "NextAuth secret key"
+  NEXTAUTH_URL = "Your deployment URL (https://yourdomain.com)"

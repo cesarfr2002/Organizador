@@ -26,7 +26,10 @@ export const config = {
     "/subjects/:path*",
     "/schedule/:path*",
     "/calendar/:path*",
-    "/api/tasks/:path*",
+    // Exclude notification endpoints from auth requirement
+    "/api/tasks/create", 
+    "/api/tasks/update", 
+    "/api/tasks/delete",
     "/api/subjects/:path*",
     "/api/notes/:path*",
     // Agrega otras rutas protegidas aquí

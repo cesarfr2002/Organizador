@@ -7,13 +7,50 @@ import User from "../../../models/User";
 import dbConnect from "../../../lib/dbConnect";
 import bcrypt from "bcryptjs";
 
-// Make sure to import the environment variables
+// Debug logging
+console.log("NextAuth Config Loading");
+console.log("NEXTAUTH_URL:", process.env.NEXTAUTH_URL);
+console.log("NODE_ENV:", process.env.NODE_ENV);
+
+// Helper function to determine the base URL
+const getBaseUrl = () => {
+  // For Netlify deployments, use environment variable
+  if (process.env.NETLIFY) {
+    console.log("Netlify deployment detected");
+    // Use site URL from Netlify
+    return process.env.URL || process.env.NEXTAUTH_URL;
+  }
+  
+  // For local development
+  if (process.env.NODE_ENV === 'development') {
+    return process.env.NEXTAUTH_URL || 'http://localhost:3000';
+  }
+  
+  // For other production deployments
+  return process.env.NEXTAUTH_URL;
+};
+
+// Ensure we have a valid base URL
+const baseUrl = getBaseUrl();
+console.log("Determined baseUrl:", baseUrl);
 
 export const authOptions = {
   secret: process.env.NEXTAUTH_SECRET,
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
+  debug: true, // Enable NextAuth.js debugging
+  logger: {
+    error(code, metadata) {
+      console.error(`NextAuth Error: ${code}`, metadata);
+    },
+    warn(code) {
+      console.warn(`NextAuth Warning: ${code}`);
+    },
+    debug(code, metadata) {
+      console.log(`NextAuth Debug: ${code}`, metadata);
+    },
   },
   adapter: MongoDBAdapter(clientPromise),
   providers: [
@@ -23,32 +60,51 @@ export const authOptions = {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" }
       },
-      async authorize(credentials) {
-        await dbConnect();
+      async authorize(credentials, req) {
+        console.log("CredentialsProvider authorize called");
         
-        // Buscar usuario por email
-        const user = await User.findOne({ email: credentials.email });
-        
-        if (!user) {
+        if (!credentials) {
+          console.error("No credentials provided");
           return null;
         }
         
-        // Verificar contraseña
-        const isPasswordMatch = await bcrypt.compare(
-          credentials.password,
-          user.password
-        );
-        
-        if (!isPasswordMatch) {
+        try {
+          await dbConnect();
+          
+          // Buscar usuario por email
+          console.log("Looking for user with email:", credentials.email);
+          const user = await User.findOne({ email: credentials.email });
+          
+          if (!user) {
+            console.log("User not found");
+            return null;
+          }
+          
+          // Verificar contraseña
+          console.log("Comparing password");
+          const isPasswordMatch = await bcrypt.compare(
+            credentials.password,
+            user.password
+          );
+          
+          if (!isPasswordMatch) {
+            console.log("Password does not match");
+            return null;
+          }
+          
+          // Log successful login
+          console.log("User authenticated successfully:", user._id);
+          
+          // Devolver objeto de usuario sin la contraseña
+          return {
+            id: user._id.toString(),
+            name: user.name,
+            email: user.email
+          };
+        } catch (error) {
+          console.error("Error in authorize function:", error);
           return null;
         }
-        
-        // Devolver objeto de usuario sin la contraseña
-        return {
-          id: user._id.toString(),
-          name: user.name,
-          email: user.email
-        };
       }
     }),
     GoogleProvider({
@@ -56,15 +112,16 @@ export const authOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     })
   ],
-  // Update callbacks to handle Netlify serverless environment
   callbacks: {
     async jwt({ token, user }) {
+      console.log("JWT callback called", { hasUser: !!user });
       if (user) {
         token.id = user.id;
       }
       return token;
     },
     async session({ session, token }) {
+      console.log("Session callback called", { hasToken: !!token });
       if (token) {
         session.user.id = token.id;
       }
@@ -75,7 +132,8 @@ export const authOptions = {
     signIn: '/login',
     error: '/login',
   },
-  debug: process.env.NODE_ENV === 'development',
+  // Properly define the base URL
+  ...(baseUrl ? { url: baseUrl } : {}),
 };
 
 export default NextAuth(authOptions);
