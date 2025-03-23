@@ -56,6 +56,7 @@ export const authOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     })
   ],
+  // Update callbacks to handle Netlify serverless environment
   callbacks: {
     async jwt({ token, user }) {
       if (user) {

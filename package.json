@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "export": "next export",
+    "deploy": "netlify deploy --prod"
   },
   "dependencies": {
     "@auth/mongodb-adapter": "^3.8.0",

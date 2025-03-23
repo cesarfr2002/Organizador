@@ -1,0 +1,17 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+# Needed for NextAuth.js and API routes to work properly
+[functions]
+  included_files = ["node_modules/mongodb/**", "node_modules/@auth/**"]
+  
+# Handle routing for SPA client-side navigation
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Environment variable inheritance
+[build.environment]
+  NEXT_TELEMETRY_DISABLED = "1"
