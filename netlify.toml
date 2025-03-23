@@ -2,46 +2,28 @@
   command = "npm install --production=false --legacy-peer-deps && npm run build"
   publish = ".next"
 
-# Include all environment variables
+# Enable Next.js Runtime - this is critical for API routes to work
 [build.environment]
   NEXT_TELEMETRY_DISABLED = "1"
   NODE_ENV = "production"
-  # Ensure dev dependencies are installed for build
-  NPM_FLAGS = "--legacy-peer-deps --production=false"
+  NETLIFY_NEXT_PLUGIN_SKIP = "false"
 
 # Needed for NextAuth.js and API routes to work properly
 [functions]
   included_files = ["node_modules/mongodb/**", "node_modules/@auth/**", "node_modules/bcryptjs/**", "node_modules/next-auth/**", "node_modules/tailwindcss/**"]
   node_bundler = "esbuild"
 
-# NextAuth specific redirects - these must come BEFORE the general API redirects
-[[redirects]]
-  from = "/api/auth/*"
-  to = "/.netlify/functions/next-api/auth/:splat"
-  status = 200
-  force = true
+# IMPORTANT: Don't use custom redirects for Next.js API routes
+# Let the Next.js plugin handle all routing
 
-# API routes
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/next-api/:splat"
-  status = 200
-  force = true
-
-# Ensure JSON content type is preserved
-[[headers]]
-  for = "/api/*"
-  [headers.values]
-    Content-Type = "application/json"
-    X-Content-Type-Options = "nosniff"
-
-# For SPA navigation - this must be LAST
+# For SPA navigation - this must be LAST and should only catch non-api routes
 [[redirects]]
   from = "/*"
-  to = "/index.html"
+  to = "/.netlify/functions/___netlify-handler"
   status = 200
+  force = false
   
-# This helps catch issues with environment variable propagation
+# Environment Variables
 [template.environment]
   MONGODB_URI = "MongoDB connection string"
   NEXTAUTH_SECRET = "NextAuth secret key"

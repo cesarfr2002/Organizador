@@ -3,6 +3,14 @@ import dbConnect from '../../../lib/dbConnect';
 import Task from '../../../models/Task';
 
 export default async function handler(req, res) {
+  console.log("===== API ENDPOINT ENVIRONMENT CHECK =====");
+  console.log("NEXTAUTH_SECRET:", process.env.NEXTAUTH_SECRET ? "✅ Set" : "❌ Missing");
+  console.log("NEXTAUTH_URL:", process.env.NEXTAUTH_URL ? "✅ Set" : "❌ Missing");
+  console.log("Request path:", req.url);
+  console.log("Request method:", req.method);
+  console.log("Request headers:", JSON.stringify(req.headers));
+  console.log("=========================================");
+
   // Set CORS headers to allow frontend requests
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');

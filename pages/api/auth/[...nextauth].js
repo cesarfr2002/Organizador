@@ -7,10 +7,16 @@ import User from "../../../models/User";
 import dbConnect from "../../../lib/dbConnect";
 import bcrypt from "bcryptjs";
 
-// Debug logging
-console.log("NextAuth Config Loading");
-console.log("NEXTAUTH_URL:", process.env.NEXTAUTH_URL);
+// Enhanced environment variable logging
+console.log("===== NEXTAUTH ENVIRONMENT VARIABLES CHECK =====");
+console.log("NEXTAUTH_URL:", process.env.NEXTAUTH_URL ? "✅ Set" : "❌ Missing");
+console.log("NEXTAUTH_SECRET:", process.env.NEXTAUTH_SECRET ? "✅ Set" : "❌ Missing");
+console.log("MONGODB_URI:", process.env.MONGODB_URI ? "✅ Set" : "❌ Missing");
 console.log("NODE_ENV:", process.env.NODE_ENV);
+console.log("NETLIFY:", process.env.NETLIFY ? "✅ Running on Netlify" : "Not on Netlify");
+console.log("URL (Netlify):", process.env.URL || "Not set");
+console.log("DEPLOY_URL (Netlify):", process.env.DEPLOY_URL || "Not set");
+console.log("============================================");
 
 // Helper function to determine the base URL
 const getBaseUrl = () => {

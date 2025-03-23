@@ -13,6 +13,15 @@ import { AutoScheduleProvider } from '../context/AutoScheduleContext';
 import TaskNotificationChecker from '../components/TaskNotificationChecker';
 
 function MyApp({ Component, pageProps: { session, ...pageProps } }) {
+  // Log client-side environment variables
+  useEffect(() => {
+    console.log("===== CLIENT-SIDE ENVIRONMENT VARIABLES =====");
+    console.log("NEXT_PUBLIC_APP_URL:", process.env.NEXT_PUBLIC_APP_URL || "Not set");
+    console.log("NEXT_PUBLIC_API_URL:", process.env.NEXT_PUBLIC_API_URL || "Not set");
+    console.log("Window Location:", window.location.href);
+    console.log("============================================");
+  }, []);
+
   // Registrar el service worker para PWA
   useEffect(() => {
     if ('serviceWorker' in navigator) {
