@@ -2,10 +2,8 @@ import { SessionProvider } from 'next-auth/react';
 import { ThemeProvider } from 'next-themes';
 import { NotificationProvider } from '../context/NotificationContext';
 import { useEffect } from 'react';
-import '../styles/globals.css'; // Instead of 'tailwindcss/tailwind.css'
+import '../styles/globals.css'; // This already imports Tailwind
 import 'react-toastify/dist/ReactToastify.css';
-import '@tailwindcss/typography'; // Asegúrate de que esto esté instalado y configurado
-import '../styles/globals.css';
 import Head from 'next/head';
 import { GamificationProvider } from '../context/GamificationContext';
 import RewardNotification from '../components/RewardNotification';
