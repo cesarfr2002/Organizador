@@ -14,7 +14,14 @@
   included_files = ["node_modules/mongodb/**", "node_modules/@auth/**", "node_modules/bcryptjs/**", "node_modules/next-auth/**", "node_modules/tailwindcss/**"]
   node_bundler = "esbuild"
 
-# Properly redirect API requests before the catch-all
+# NextAuth specific redirects - these must come BEFORE the general API redirects
+[[redirects]]
+  from = "/api/auth/*"
+  to = "/.netlify/functions/next-api/auth/:splat"
+  status = 200
+  force = true
+
+# API routes
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/next-api/:splat"
@@ -28,7 +35,7 @@
     Content-Type = "application/json"
     X-Content-Type-Options = "nosniff"
 
-# For SPA navigation - this should be last
+# For SPA navigation - this must be LAST
 [[redirects]]
   from = "/*"
   to = "/index.html"
