@@ -11,6 +11,7 @@ export default async function handler(req, res) {
   }
   
   try {
+    // Get the session using getServerSession with proper authOptions
     const session = await getServerSession(req, res, authOptions);
     
     if (!session) {

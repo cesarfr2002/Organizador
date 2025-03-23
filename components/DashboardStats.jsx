@@ -32,20 +32,22 @@ export default function DashboardStats() {
   const fetchStats = async () => {
     setLoading(true);
     try {
-      // Usar la API real con el período adecuado
+      // Add error handling
       const res = await fetch(`/api/dashboard/stats?period=${activeTab}`);
       
-      if (res.ok) {
-        const data = await res.json();
-        setStats(data);
-        setLoading(false);
-        initCharts();
-      } else {
-        throw new Error('Error al obtener estadísticas');
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('Error response:', errorText);
+        throw new Error(`Error status: ${res.status}`);
       }
+      
+      const data = await res.json();
+      setStats(data);
+      setLoading(false);
+      initCharts();
     } catch (error) {
       console.error('Error fetching stats:', error);
-      // Si falla la API, usar datos de respaldo mínimos
+      // Use fallback data
       setStats({
         tasksCompleted: 0,
         tasksPending: 0,
@@ -76,6 +78,13 @@ export default function DashboardStats() {
     try {
       // Obtener datos reales para el gráfico de productividad
       const res = await fetch(`/api/dashboard/productivity?period=${activeTab}`);
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('Error response:', errorText);
+        throw new Error(`Error status: ${res.status}`);
+      }
+      
       const data = await res.json();
       
       // Determinar si estamos en modo oscuro
@@ -160,6 +169,13 @@ export default function DashboardStats() {
     try {
       // Obtener datos reales para el progreso por asignatura
       const res = await fetch('/api/dashboard/subject-progress');
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('Error response:', errorText);
+        throw new Error(`Error status: ${res.status}`);
+      }
+      
       const data = await res.json();
       
       // Determinar si estamos en modo oscuro

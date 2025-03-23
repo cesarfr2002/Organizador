@@ -1,13 +1,21 @@
-import NextAuth from 'next-auth';
-import CredentialsProvider from 'next-auth/providers/credentials';
-import { MongoDBAdapter } from '@auth/mongodb-adapter'; // Cambiado a la nueva ubicación
-import clientPromise from '../../../lib/mongodb';
-import dbConnect from '../../../lib/dbConnect';
-import User from '../../../models/User';
-import bcrypt from 'bcryptjs';
+import NextAuth from "next-auth";
+import { MongoDBAdapter } from "@auth/mongodb-adapter";
+import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
+import clientPromise from "../../../lib/mongodb";
+import User from "../../../models/User";
+import dbConnect from "../../../lib/dbConnect";
+import bcrypt from "bcryptjs";
+
+// Make sure to import the environment variables
 
 export const authOptions = {
-  adapter: MongoDBAdapter(clientPromise), // El adaptador sigue igual
+  secret: process.env.NEXTAUTH_SECRET,
+  session: {
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
+  adapter: MongoDBAdapter(clientPromise),
   providers: [
     CredentialsProvider({
       name: 'credentials',
@@ -42,12 +50,12 @@ export const authOptions = {
           email: user.email
         };
       }
+    }),
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     })
   ],
-  session: {
-    strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 días
-  },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
@@ -66,7 +74,6 @@ export const authOptions = {
     signIn: '/login',
     error: '/login',
   },
-  secret: process.env.NEXTAUTH_SECRET,
   debug: process.env.NODE_ENV === 'development',
 };
 
