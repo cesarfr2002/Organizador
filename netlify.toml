@@ -1,5 +1,5 @@
 [build]
-  command = "npm install --legacy-peer-deps && npm run build"
+  command = "npm install --production=false --legacy-peer-deps && npm run build"
   publish = ".next"
 
 # Include all environment variables
@@ -7,11 +7,11 @@
   NEXT_TELEMETRY_DISABLED = "1"
   NODE_ENV = "production"
   # Ensure dev dependencies are installed for build
-  NPM_FLAGS = "--legacy-peer-deps"
+  NPM_FLAGS = "--legacy-peer-deps --production=false"
 
 # Needed for NextAuth.js and API routes to work properly
 [functions]
-  included_files = ["node_modules/mongodb/**", "node_modules/@auth/**", "node_modules/bcryptjs/**", "node_modules/next-auth/**"]
+  included_files = ["node_modules/mongodb/**", "node_modules/@auth/**", "node_modules/bcryptjs/**", "node_modules/next-auth/**", "node_modules/tailwindcss/**"]
   node_bundler = "esbuild"
 
 # Properly redirect API requests before the catch-all
