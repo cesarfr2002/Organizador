@@ -6,6 +6,8 @@
 [build.environment]
   NEXT_TELEMETRY_DISABLED = "1"
   NODE_ENV = "production"
+  # Ensure dev dependencies are installed for build
+  NPM_FLAGS = "--legacy-peer-deps"
 
 # Needed for NextAuth.js and API routes to work properly
 [functions]

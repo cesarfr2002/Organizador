@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Add any custom global styles below */
+html,
+body {
+  @apply antialiased;
+}
+
 /* Add custom styles for dark mode */
 .dark {
   color-scheme: dark;
