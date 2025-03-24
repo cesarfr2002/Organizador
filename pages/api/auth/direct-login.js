@@ -1,16 +1,19 @@
-import { sign } from 'jsonwebtoken';
-import { serialize } from 'cookie';
 import dbConnect from '../../../lib/dbConnect';
 import User from '../../../models/User';
 import bcrypt from 'bcryptjs';
 
 export default async function handler(req, res) {
+  // Set the content type to avoid browser errors
+  res.setHeader('Content-Type', 'application/json');
+  
   // Only allow POST requests
   if (req.method !== 'POST') {
     return res.status(405).json({ success: false, message: 'Method not allowed' });
   }
 
   try {
+    // Connect to database
+    console.log("Connecting to database...");
     await dbConnect();
     
     const { email, password } = req.body;
@@ -22,10 +25,13 @@ export default async function handler(req, res) {
       });
     }
     
+    console.log(`Attempting login for: ${email}`);
+    
     // Find user
     const user = await User.findOne({ email });
     
     if (!user) {
+      console.log("User not found");
       return res.status(401).json({ 
         success: false, 
         message: 'Invalid credentials' 
@@ -36,36 +42,17 @@ export default async function handler(req, res) {
     const isMatch = await bcrypt.compare(password, user.password);
     
     if (!isMatch) {
+      console.log("Password doesn't match");
       return res.status(401).json({ 
         success: false, 
         message: 'Invalid credentials' 
       });
     }
     
-    // Create JWT payload
-    const payload = {
-      id: user._id.toString(),
-      name: user.name,
-      email: user.email
-    };
+    console.log("User authenticated successfully");
     
-    // Sign the JWT
-    const token = sign(
-      payload,
-      process.env.NEXTAUTH_SECRET,
-      { expiresIn: '30d' }
-    );
-    
-    // Set cookie
-    const cookie = serialize('auth-token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 30 * 24 * 60 * 60,
-      path: '/'
-    });
-    
-    res.setHeader('Set-Cookie', cookie);
+    // Simplified version - don't use jsonwebtoken, just set a simple session cookie
+    res.setHeader('Set-Cookie', `session=${user._id.toString()}; Path=/; HttpOnly; SameSite=Strict; ${process.env.NODE_ENV === 'production' ? 'Secure;' : ''} Max-Age=${30 * 24 * 60 * 60}`);
     
     return res.status(200).json({
       success: true,
@@ -80,7 +67,8 @@ export default async function handler(req, res) {
     console.error('Login error:', error);
     return res.status(500).json({ 
       success: false, 
-      message: 'Server error, please try again later' 
+      message: 'Server error, please try again later',
+      error: error.message
     });
   }
 }

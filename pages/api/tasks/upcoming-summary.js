@@ -9,9 +9,31 @@ export default async function handler(req, res) {
   }
   
   try {
-    const session = await getServerSession(req, res, authOptions);
+    // Set content type explicitly
+    res.setHeader('Content-Type', 'application/json');
     
-    if (!session) {
+    // Try both auth methods
+    let userId = null;
+    
+    // Check NextAuth session
+    const session = await getServerSession(req, res, authOptions).catch(err => {
+      console.log("Error getting NextAuth session:", err.message);
+      return null;
+    });
+    
+    if (session?.user?.id) {
+      userId = session.user.id;
+    }
+    
+    // If no NextAuth session, check for direct login cookie
+    if (!userId) {
+      const sessionCookie = req.cookies?.session;
+      if (sessionCookie) {
+        userId = sessionCookie;
+      }
+    }
+    
+    if (!userId) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
     
@@ -27,14 +49,14 @@ export default async function handler(req, res) {
     
     // Tasks due today
     const todayCount = await Task.countDocuments({
-      userId: session.user.id,
+      userId: userId,
       dueDate: { $gte: today, $lte: endOfToday },
       completed: false
     });
     
     // Tasks overdue (due before today)
     const overdueCount = await Task.countDocuments({
-      userId: session.user.id,
+      userId: userId,
       dueDate: { $lt: today },
       completed: false
     });

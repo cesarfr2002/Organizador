@@ -19,58 +19,61 @@ export default function Login() {
     try {
       console.log("Starting login process...");
       
-      // Try the standard NextAuth approach first
-      try {
-        const result = await signIn('credentials', {
-          redirect: false,
-          email,
-          password,
-        });
-        
-        if (result && !result.error) {
-          console.log("Login successful via NextAuth, redirecting...");
-          router.push('/dashboard');
-          return;
-        }
-        
-        if (result && result.error) {
-          console.error("NextAuth error:", result.error);
-          setError('Credenciales inválidas. Por favor, intenta de nuevo.');
-        }
-      } catch (signInError) {
-        console.error("SignIn process error:", signInError);
-        
-        // This is likely an infrastructure issue rather than invalid credentials
-        // Try the direct API approach instead
-        console.log("Trying direct login API...");
-        
+      // Determine if we're on Netlify production environment
+      const isNetlify = typeof window !== 'undefined' && 
+                      window.location.hostname.includes('netlify');
+                      
+      // On Netlify, skip NextAuth and use direct API to avoid URL construction issues
+      if (isNetlify) {
+        console.log("Using direct login API for Netlify environment");
         try {
-          const directLoginResult = await fetch('/api/auth/direct-login', {
+          const response = await fetch('/api/auth/direct-login', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({ email, password }),
-            credentials: 'include',
           });
           
-          const data = await directLoginResult.json();
+          const data = await response.json();
           
-          if (directLoginResult.ok && data.success) {
-            console.log("Direct login successful, redirecting...");
+          if (response.ok && data.success) {
+            console.log("Login successful, redirecting...");
             window.location.href = '/dashboard';
             return;
           } else {
-            setError(data.message || 'Credenciales inválidas. Por favor, intenta de nuevo.');
+            setError(data.message || 'Login failed. Please try again.');
           }
-        } catch (directError) {
-          console.error("Direct login error:", directError);
-          setError('Error de conexión. Por favor intente más tarde.');
+        } catch (apiError) {
+          console.error("API login error:", apiError);
+          setError('Connection error. Please try again later.');
+        }
+      } else {
+        // For local dev and other environments, use NextAuth
+        console.log("Using NextAuth for login");
+        try {
+          const result = await signIn('credentials', {
+            redirect: false,
+            email,
+            password,
+          });
+          
+          if (result && !result.error) {
+            console.log("Login successful, redirecting...");
+            router.push('/dashboard');
+            return;
+          } else {
+            setError(result?.error || 'Invalid credentials');
+            console.error("Login error:", result?.error);
+          }
+        } catch (authError) {
+          console.error("NextAuth error:", authError);
+          setError('Authentication error. Please try again.');
         }
       }
-    } catch (generalError) {
-      console.error("General login error:", generalError);
-      setError('Ocurrió un error durante el inicio de sesión. Por favor, intenta de nuevo.');
+    } catch (error) {
+      console.error("General login error:", error);
+      setError('An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);
     }
