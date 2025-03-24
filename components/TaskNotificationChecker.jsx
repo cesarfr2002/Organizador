@@ -17,9 +17,8 @@ export default function TaskNotificationChecker() {
       try {
         console.log("Attempting to fetch task notifications...");
         
-        // CRITICAL FIX: Use window.location.origin to ensure we fetch from the current domain
-        const baseUrl = window.location.origin;
-        const res = await fetch(`${baseUrl}/api/tasks/upcoming-summary`, {
+        // CRITICAL FIX: Don't construct URLs, use relative paths instead
+        const res = await fetch('/api/tasks/upcoming-summary', {
           headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json'

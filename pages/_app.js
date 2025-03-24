@@ -56,7 +56,8 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }) {
   }, []);
 
   return (
-    <SessionProvider session={session} basePath={getBaseUrl() + '/api/auth'}>
+    // CRITICAL FIX: Remove the basePath prop that's causing the URL construction error
+    <SessionProvider session={session}>
       <GamificationProvider>
         <ThemeProvider attribute="class">
           <NotificationProvider>

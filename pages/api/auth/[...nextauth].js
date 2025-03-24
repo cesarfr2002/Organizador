@@ -18,15 +18,10 @@ console.log("URL (Netlify):", process.env.URL || "Not set");
 console.log("DEPLOY_URL (Netlify):", process.env.DEPLOY_URL || "Not set");
 console.log("============================================");
 
-// CRITICAL FIX: Determine base URL correctly based on environment
+// CRITICAL FIX: Simplify URL determination
 const getBaseUrl = () => {
-  // In development, always use localhost
-  if (process.env.NODE_ENV === 'development') {
-    return 'http://localhost:3000';
-  }
-  
-  // In production, use NEXTAUTH_URL or Netlify URL
-  return process.env.NEXTAUTH_URL || process.env.URL || '';
+  return process.env.NEXTAUTH_URL || 
+    (process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : undefined);
 };
 
 const baseUrl = getBaseUrl();
@@ -130,8 +125,6 @@ export const authOptions = {
     signIn: '/login',
     error: '/login',
   },
-  // CRITICAL FIX: Set URL explicitly for current environment
-  url: baseUrl,
 };
 
 export default NextAuth(authOptions);

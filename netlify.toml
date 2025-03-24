@@ -2,7 +2,7 @@
   command = "npm install --production=false --legacy-peer-deps && npm run build"
   publish = ".next"
 
-# Essential env settings
+# Essential env settings - make sure all NextAuth env vars are explicitly set
 [build.environment]
   NEXT_TELEMETRY_DISABLED = "1"
   NODE_ENV = "production"
