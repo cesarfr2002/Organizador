@@ -19,12 +19,14 @@ export default function Login() {
     try {
       console.log("Starting login process...");
       
-      // Use try-catch block around signIn for better error handling
+      // CRITICAL FIX: Add explicit callbackUrl to prevent URL construction errors
       try {
         const result = await signIn('credentials', {
           redirect: false,
           email,
           password,
+          // Add the explicit callbackUrl using window.location
+          callbackUrl: typeof window !== 'undefined' ? `${window.location.origin}/dashboard` : '/dashboard',
         });
         
         console.log("SignIn result:", result);
@@ -45,7 +47,18 @@ export default function Login() {
         console.error("SignIn process error:", signInError);
         // Check if this is URL construction error
         if (signInError instanceof TypeError && signInError.message.includes('URL')) {
-          setError('Error de configuración del servidor. Por favor contacte al administrador.');
+          console.error("URL construction error. Using fallback method...");
+          
+          // CRITICAL FIX: Fallback to direct navigation if signIn fails with URL error
+          try {
+            // Try a simpler approach as fallback
+            window.location.href = "/api/auth/callback/credentials?email=" + 
+              encodeURIComponent(email) + "&password=" + encodeURIComponent(password);
+            return; // Exit early as we're navigating away
+          } catch (fallbackError) {
+            console.error("Fallback navigation failed:", fallbackError);
+            setError('Error de autenticación. Por favor contacte al administrador.');
+          }
         } else {
           setError('Error en el proceso de autenticación. Por favor, intenta de nuevo.');
         }

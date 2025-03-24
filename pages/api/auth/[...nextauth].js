@@ -18,7 +18,7 @@ console.log("URL (Netlify):", process.env.URL || "Not set");
 console.log("DEPLOY_URL (Netlify):", process.env.DEPLOY_URL || "Not set");
 console.log("============================================");
 
-// CRITICAL FIX: Create clean configuration without URL manipulation
+// CRITICAL FIX: Remove any custom URL determination - let NextAuth handle it
 export const authOptions = {
   // Use the secret for signing cookies
   secret: process.env.NEXTAUTH_SECRET,
@@ -29,8 +29,8 @@ export const authOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   
-  // Enable debugging but only log errors in production
-  debug: process.env.NODE_ENV === 'development',
+  // CRUCIAL: Disable debug in production to avoid URL construction issues
+  debug: false,
   
   // Configure logging
   logger: {
@@ -134,6 +134,13 @@ export const authOptions = {
     signIn: '/login',
     error: '/login',
   },
+
+  // CRITICAL FIX: Add more reliable error handling
+  events: {
+    error: ({ message }) => {
+      console.error(`NextAuth error event: ${message}`);
+    }
+  }
 };
 
 export default NextAuth(authOptions);
