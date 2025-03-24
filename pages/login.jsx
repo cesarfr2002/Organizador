@@ -19,48 +19,53 @@ export default function Login() {
     try {
       console.log("Starting login process...");
       
-      // CRITICAL FIX: Add explicit callbackUrl to prevent URL construction errors
+      // Try the standard NextAuth approach first
       try {
         const result = await signIn('credentials', {
           redirect: false,
           email,
           password,
-          // Add the explicit callbackUrl using window.location
-          callbackUrl: typeof window !== 'undefined' ? `${window.location.origin}/dashboard` : '/dashboard',
         });
         
-        console.log("SignIn result:", result);
-        
-        if (!result) {
-          throw new Error("Authentication service unavailable");
+        if (result && !result.error) {
+          console.log("Login successful via NextAuth, redirecting...");
+          router.push('/dashboard');
+          return;
         }
         
-        if (result.error) {
+        if (result && result.error) {
+          console.error("NextAuth error:", result.error);
           setError('Credenciales inválidas. Por favor, intenta de nuevo.');
-          console.error("Login error:", result.error);
-        } else {
-          // Successful login - redirect to dashboard
-          console.log("Login successful, redirecting...");
-          router.push('/dashboard');
         }
       } catch (signInError) {
         console.error("SignIn process error:", signInError);
-        // Check if this is URL construction error
-        if (signInError instanceof TypeError && signInError.message.includes('URL')) {
-          console.error("URL construction error. Using fallback method...");
+        
+        // This is likely an infrastructure issue rather than invalid credentials
+        // Try the direct API approach instead
+        console.log("Trying direct login API...");
+        
+        try {
+          const directLoginResult = await fetch('/api/auth/direct-login', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email, password }),
+            credentials: 'include',
+          });
           
-          // CRITICAL FIX: Fallback to direct navigation if signIn fails with URL error
-          try {
-            // Try a simpler approach as fallback
-            window.location.href = "/api/auth/callback/credentials?email=" + 
-              encodeURIComponent(email) + "&password=" + encodeURIComponent(password);
-            return; // Exit early as we're navigating away
-          } catch (fallbackError) {
-            console.error("Fallback navigation failed:", fallbackError);
-            setError('Error de autenticación. Por favor contacte al administrador.');
+          const data = await directLoginResult.json();
+          
+          if (directLoginResult.ok && data.success) {
+            console.log("Direct login successful, redirecting...");
+            window.location.href = '/dashboard';
+            return;
+          } else {
+            setError(data.message || 'Credenciales inválidas. Por favor, intenta de nuevo.');
           }
-        } else {
-          setError('Error en el proceso de autenticación. Por favor, intenta de nuevo.');
+        } catch (directError) {
+          console.error("Direct login error:", directError);
+          setError('Error de conexión. Por favor intente más tarde.');
         }
       }
     } catch (generalError) {
