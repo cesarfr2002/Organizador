@@ -21,23 +21,16 @@ const getBaseUrl = () => {
 };
 
 function MyApp({ Component, pageProps: { session, ...pageProps } }) {
-  // Log client-side environment variables
+  // Log client-side environment variables for debugging
   useEffect(() => {
-    // Get the current URL dynamically
-    const currentUrl = getBaseUrl();
-    
     console.log("===== CLIENT-SIDE ENVIRONMENT VARIABLES =====");
     console.log("NEXT_PUBLIC_APP_URL:", process.env.NEXT_PUBLIC_APP_URL || "Not set");
     console.log("NEXT_PUBLIC_API_URL:", process.env.NEXT_PUBLIC_API_URL || "Not set");
-    console.log("Current URL (dynamic):", currentUrl);
     console.log("Window Location:", window.location.href);
     console.log("============================================");
     
-    // Override NextAuth fetch URL for development
-    if (process.env.NODE_ENV === 'development') {
-      window.__NEXT_DATA__.props.pageProps.session = session;
-    }
-  }, [session]);
+    // No need for overriding NextAuth fetch URL
+  }, []);
 
   // Registrar el service worker para PWA
   useEffect(() => {
@@ -56,7 +49,7 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }) {
   }, []);
 
   return (
-    // CRITICAL FIX: Remove the basePath prop that's causing the URL construction error
+    // Simple SessionProvider without any custom URL - let NextAuth handle this
     <SessionProvider session={session}>
       <GamificationProvider>
         <ThemeProvider attribute="class">

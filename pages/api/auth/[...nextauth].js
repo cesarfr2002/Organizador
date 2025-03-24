@@ -7,7 +7,7 @@ import User from "../../../models/User";
 import dbConnect from "../../../lib/dbConnect";
 import bcrypt from "bcryptjs";
 
-// Enhanced environment variable logging
+// Debug logging
 console.log("===== NEXTAUTH ENVIRONMENT VARIABLES CHECK =====");
 console.log("NEXTAUTH_URL:", process.env.NEXTAUTH_URL ? "✅ Set" : "❌ Missing");
 console.log("NEXTAUTH_SECRET:", process.env.NEXTAUTH_SECRET ? "✅ Set" : "❌ Missing");
@@ -18,22 +18,21 @@ console.log("URL (Netlify):", process.env.URL || "Not set");
 console.log("DEPLOY_URL (Netlify):", process.env.DEPLOY_URL || "Not set");
 console.log("============================================");
 
-// CRITICAL FIX: Simplify URL determination
-const getBaseUrl = () => {
-  return process.env.NEXTAUTH_URL || 
-    (process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : undefined);
-};
-
-const baseUrl = getBaseUrl();
-console.log("Using baseUrl:", baseUrl);
-
+// CRITICAL FIX: Create clean configuration without URL manipulation
 export const authOptions = {
+  // Use the secret for signing cookies
   secret: process.env.NEXTAUTH_SECRET,
+  
+  // Session configuration - JWT is crucial for Netlify
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
-  debug: process.env.NODE_ENV !== 'production',
+  
+  // Enable debugging but only log errors in production
+  debug: process.env.NODE_ENV === 'development',
+  
+  // Configure logging
   logger: {
     error(code, metadata) {
       console.error(`NextAuth Error: ${code}`, metadata);
@@ -42,10 +41,16 @@ export const authOptions = {
       console.warn(`NextAuth Warning: ${code}`);
     },
     debug(code, metadata) {
-      console.log(`NextAuth Debug: ${code}`, metadata);
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`NextAuth Debug: ${code}`, metadata);
+      }
     },
   },
+  
+  // Connect to MongoDB
   adapter: MongoDBAdapter(clientPromise),
+  
+  // Authentication providers
   providers: [
     CredentialsProvider({
       name: 'credentials',
@@ -105,6 +110,8 @@ export const authOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     })
   ],
+  
+  // Callbacks
   callbacks: {
     async jwt({ token, user }) {
       console.log("JWT callback called", { hasUser: !!user });
@@ -121,6 +128,8 @@ export const authOptions = {
       return session;
     }
   },
+  
+  // Page redirects
   pages: {
     signIn: '/login',
     error: '/login',
