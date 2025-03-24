@@ -2,29 +2,19 @@
   command = "npm install --production=false --legacy-peer-deps && npm run build"
   publish = ".next"
 
-# Enable Next.js Runtime
+# Essential env settings
 [build.environment]
   NEXT_TELEMETRY_DISABLED = "1"
   NODE_ENV = "production"
-  NETLIFY_NEXT_PLUGIN_SKIP = "false"
 
-# Function configuration
-[functions]
-  included_files = ["node_modules/mongodb/**", "node_modules/@auth/**", "node_modules/bcryptjs/**", "node_modules/next-auth/**", "node_modules/tailwindcss/**"]
-  node_bundler = "esbuild"
-
-# Critical: Use Netlify plugin for Next.js handling
+# Simply reference the Next.js plugin
 [[plugins]]
   package = "@netlify/plugin-nextjs"
+  # Add critical environment variables directly
+  [plugins.inputs]
+    nextConfigDir = "/"
 
-# No custom redirects needed - plugin handles this automatically
-
-# Log environment variables
-[build.processing]
-  skip_processing = false
-
-# Environment Variables
-[template.environment]
-  MONGODB_URI = "MongoDB connection string"
-  NEXTAUTH_SECRET = "NextAuth secret key"
-  NEXTAUTH_URL = "Your deployment URL (https://yourdomain.com)"
+# Make sure environment variables are available during build
+[functions]
+  node_bundler = "esbuild"
+  included_files = ["node_modules/mongodb/**", "node_modules/@auth/**", "node_modules/bcryptjs/**", "node_modules/next-auth/**", "node_modules/tailwindcss/**"]

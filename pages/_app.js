@@ -12,15 +12,32 @@ import { ToastContainer } from 'react-toastify';
 import { AutoScheduleProvider } from '../context/AutoScheduleContext';
 import TaskNotificationChecker from '../components/TaskNotificationChecker';
 
+// CRITICAL FIX: Ensure we use the correct base URL for the current environment
+const getBaseUrl = () => {
+  if (typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+  return process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+};
+
 function MyApp({ Component, pageProps: { session, ...pageProps } }) {
   // Log client-side environment variables
   useEffect(() => {
+    // Get the current URL dynamically
+    const currentUrl = getBaseUrl();
+    
     console.log("===== CLIENT-SIDE ENVIRONMENT VARIABLES =====");
     console.log("NEXT_PUBLIC_APP_URL:", process.env.NEXT_PUBLIC_APP_URL || "Not set");
     console.log("NEXT_PUBLIC_API_URL:", process.env.NEXT_PUBLIC_API_URL || "Not set");
+    console.log("Current URL (dynamic):", currentUrl);
     console.log("Window Location:", window.location.href);
     console.log("============================================");
-  }, []);
+    
+    // Override NextAuth fetch URL for development
+    if (process.env.NODE_ENV === 'development') {
+      window.__NEXT_DATA__.props.pageProps.session = session;
+    }
+  }, [session]);
 
   // Registrar el service worker para PWA
   useEffect(() => {
@@ -39,7 +56,7 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }) {
   }, []);
 
   return (
-    <SessionProvider session={session}>
+    <SessionProvider session={session} basePath={getBaseUrl() + '/api/auth'}>
       <GamificationProvider>
         <ThemeProvider attribute="class">
           <NotificationProvider>

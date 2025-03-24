@@ -18,27 +18,19 @@ console.log("URL (Netlify):", process.env.URL || "Not set");
 console.log("DEPLOY_URL (Netlify):", process.env.DEPLOY_URL || "Not set");
 console.log("============================================");
 
-// Helper function to determine the base URL
+// CRITICAL FIX: Determine base URL correctly based on environment
 const getBaseUrl = () => {
-  // For Netlify deployments, use environment variable
-  if (process.env.NETLIFY) {
-    console.log("Netlify deployment detected");
-    // Use site URL from Netlify
-    return process.env.URL || process.env.NEXTAUTH_URL;
-  }
-  
-  // For local development
+  // In development, always use localhost
   if (process.env.NODE_ENV === 'development') {
-    return process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    return 'http://localhost:3000';
   }
   
-  // For other production deployments
-  return process.env.NEXTAUTH_URL;
+  // In production, use NEXTAUTH_URL or Netlify URL
+  return process.env.NEXTAUTH_URL || process.env.URL || '';
 };
 
-// Ensure we have a valid base URL
 const baseUrl = getBaseUrl();
-console.log("Determined baseUrl:", baseUrl);
+console.log("Using baseUrl:", baseUrl);
 
 export const authOptions = {
   secret: process.env.NEXTAUTH_SECRET,
@@ -46,7 +38,7 @@ export const authOptions = {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
-  debug: true, // Enable NextAuth.js debugging
+  debug: process.env.NODE_ENV !== 'production',
   logger: {
     error(code, metadata) {
       console.error(`NextAuth Error: ${code}`, metadata);
@@ -138,8 +130,8 @@ export const authOptions = {
     signIn: '/login',
     error: '/login',
   },
-  // Properly define the base URL
-  ...(baseUrl ? { url: baseUrl } : {}),
+  // CRITICAL FIX: Set URL explicitly for current environment
+  url: baseUrl,
 };
 
 export default NextAuth(authOptions);
